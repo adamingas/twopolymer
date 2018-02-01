@@ -3,7 +3,7 @@ import numpy as np
 noise = "yes" #yes or no
 steps = 100000
 runs = 1
-constant = np.linspace(0,10,21).tolist()
+constant = np.linspace(1,10,1).tolist()
 time_step = 0.01
 #Particles a b c d with initial positions:
 ayinitial = -0.05

@@ -21,100 +21,60 @@ def walk(k,max_file,chi_element):
     k is the weissenberg number
     """
     # No hydrodynamic interaction and no noise
-    if str.upper(hydro) in ("NO","N","NO HYDRO") and str.upper(noise) in ("NO","N","NO NOISE"):
-        for j in xrange(runs):
-            out = open("Run{}_Wi{}_chi{}".format(j,k,chi_element), "w")
-            z = zinitial
-            x = xinitial
-            y = yinitial
-            rseparation = x * x + y * y + z*z
-            out.write("{} {} {} {}\n".format(0, x, y, z))
-            maxr = rseparation
-            tmax=0
-            for i in xrange(steps):
-                # S is the stokeslet tensor
-                rseparation = x * x + y * y +z*z
-                # Sxy = (3/(4*math.sqrt(distance_sq)))*(
-                # (x2-x1)*(y2 - y1)/
-                #              distance_sq)
-                # Sxx = (3/(4*math.sqrt(distance_sq)))*(1+
-                # (x2-x1)*(x2-x1)/distance_sq)
-                # Syy =  (3/(4*math.sqrt(distance_sq)))*(1+
-                # (y2 - y1)*(y2-y1)/distance_sq)
-                #
-                # Matrix = np.array([[1,0,-Sxx,-Sxy],[0,1,-Sxy,-Syy],[-Sxx,-Sxy,1,0],[-Sxy,-Syy,0,1]])
-                # Minv = np.linalg.inv(Matrix)
-                # random_array = np.random.randn(4)
-                xnew = x + k * y * time_step - (x * time_step) / (1 - rseparation)
-                ynew = y - (y * time_step) / (1 - rseparation)
-                znew = z - (z * time_step)/(1-rseparation)
-                # x2new = x2 + np.dot(Minv, random_array)[2] * np.sqrt(
-                #     constant * time_step)
-                # y2new = y2 + np.dot(Minv, random_array)[3] * np.sqrt(
-                #     constant * time_step)
-                x, y,z = xnew, ynew , znew
-                #Finding out largest separation squared
-                if maxr <= x*x + y*y + z*z and args.max:
-                    maxr = x*x+y*y +z*z
-                    tmax = (i+1)*time_step
-                out.write("{} {} {} {}\n".format(time_step * (i + 1),x, y,z))
-
-            max_file.write("{} {} {}\n".format(k,maxr/(init_separation**2),tmax))
-            update_progress(j / (runs))
-            out.close()
 
     # Hydrodynamic interactions but not noise
-    elif str.upper(hydro) in ("YES","Y","HYDRO") and str.upper(noise) in ("NO","N","NO NOISE"):
-        for j in xrange(runs):
-            out = open("Run{}_Wi{}_chi{}".format(j, k,chi_element), "w")
-            z = zinitial
-            x = xinitial
-            y = yinitial
-            rseparation = x * x + y * y + z*z
-            out.write("{} {} {} {}\n".format(0, x, y, z))
-            maxr = rseparation
-            tmax = 0
-            for i in xrange(steps):
-                rseparation = x * x + y * y +z*z
-                ynew = y + time_step*(1/(1+3/(4*math.sqrt(rseparation)*ar_ratio)))*(-y/(1-rseparation) +
-                    (1/(ar_ratio*math.sqrt(rseparation)*(4/3) + 2))*(-y*y*x*k/rseparation +
-                    (y*y*y + y*x*x + y*z*z)/((1-rseparation)*rseparation)))
+    #if str.upper(noise) in ("NO","N","NO NOISE"):
 
-                xnew = x + time_step * (1 / (1 + 3 / (4 * math.sqrt(rseparation) * ar_ratio))) * (k*y
-                -x / (1 - rseparation) +(1 / (ar_ratio * math.sqrt(rseparation)*(4/3) + 2)) * (-y * x * x * k / rseparation
-                + (x * x * x + x * y * y + x*z*z) / ((1 - rseparation) * rseparation)))
+        #for j in xrange(runs):
+        #     out = open("Run{}_Wi{}_chi{}".format(j, k,chi_element), "w")
+        #     z = zinitial
+        #     x = xinitial
+        #     y = yinitial
+        #     rseparation = x * x + y * y + z*z
+        #     out.write("{} {} {} {}\n".format(0, x, y, z))
+        #     maxr = rseparation
+        #     tmax = 0
+        #     for i in xrange(steps):
+        #         rseparation = x * x + y * y +z*z
+        #         ynew = y + time_step*(1/(1+3/(4*math.sqrt(rseparation)*ar_ratio)))*(-y/(1-rseparation) +
+        #             (1/(ar_ratio*math.sqrt(rseparation)*(4/3) + 2))*(-y*y*x*k/rseparation +
+        #             (y*y*y + y*x*x + y*z*z)/((1-rseparation)*rseparation)))
+        #
+        #         xnew = x + time_step * (1 / (1 + 3 / (4 * math.sqrt(rseparation) * ar_ratio))) * (k*y
+        #         -x / (1 - rseparation) +(1 / (ar_ratio * math.sqrt(rseparation)*(4/3) + 2)) * (-y * x * x * k / rseparation
+        #         + (x * x * x + x * y * y + x*z*z) / ((1 - rseparation) * rseparation)))
+        #
+        #         znew = z + time_step * (1 / (1 + 3 / (4 * math.sqrt(rseparation) * ar_ratio))) * (
+        #                 -z / (1 - rseparation) +(1 / (ar_ratio * math.sqrt(rseparation) * (4 / 3) + 2)) * (-z*y*x*k/rseparation +
+        #                 (z*y*y + z*x*x + z*z*z) / ((1 - rseparation) * rseparation)))
+        #         x, y, z = xnew, ynew, znew
+        #         # Finding out largest separation squared
+        #         if maxr <= x * x + y * y + z*z and args.max:
+        #             maxr = x * x + y * y +z*z
+        #             tmax = (i+1) * time_step
+        #         out.write("{} {} {} {}\n".format(time_step * (i + 1), x, y, z))
+        #     if args.max:
+        #         max_file.write("{} {} {}\n".format(k, maxr / (init_separation ** 2), tmax))
+        #     update_progress(j / (runs))
+        #     out.close()
 
-                znew = z + time_step * (1 / (1 + 3 / (4 * math.sqrt(rseparation) * ar_ratio))) * (
-                        -z / (1 - rseparation) +(1 / (ar_ratio * math.sqrt(rseparation) * (4 / 3) + 2)) * (-z*y*x*k/rseparation +
-                        (z*y*y + z*x*x + z*z*z) / ((1 - rseparation) * rseparation)))
-                x, y, z = xnew, ynew, znew
-                # Finding out largest separation squared
-                if maxr <= x * x + y * y + z*z and args.max:
-                    maxr = x * x + y * y +z*z
-                    tmax = (i+1) * time_step
-                out.write("{} {} {} {}\n".format(time_step * (i + 1), x, y, z))
-            if args.max:
-                max_file.write("{} {} {}\n".format(k, maxr / (init_separation ** 2), tmax))
-            update_progress(j / (runs))
-            out.close()
-
-    elif str.upper(hydro) in ("YES","Y","HYDRO","NO","N","NO HYDRO") and str.upper(noise) in ("YES","Y","NOISE"):
+    if str.upper(noise) in ("YES","Y","NOISE"):
         for j in xrange(runs):
             out = open("Run{}_Wi{}_chi{}".format(j, k,chi_element), "w")
             particles = [np.array(initial_positions[0:3]),np.array(initial_positions[3:6]),
                          np.array(initial_positions[6:9]),np.array(initial_positions[9:12])]
 
-            #out.write("{} {} {} {} {}\n".format(0, x, y, z,math.sqrt(x*x+z*z+y*y)))
-
+            polyvec1 = particles[1] - particles[0]
+            polyvec2 = particles[3] - particles[2]
+            out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (1), polyvec1[0], polyvec1[1], polyvec1[2],
+            np.linalg.norm(polyvec1),polyvec2[0], polyvec2[1], polyvec2[2],np.linalg.norm(polyvec2)))
             for i in xrange(steps):
 
-                #rseparation = x * x + y * y +z*z
-                #rvector = np.array([x,y,z])
-                #Matrix of stokeslet is created
-                # Constructing the oseen tensor and a list of the separation vectors between particles
+
+                # Constructing the oseen tensor (stokeslet matrix) and a list of the separation vectors between particles
                 # The list of vectors goes like: pointing from particle ()- to particle ()
                 # 1-2, 1-3, 2-3, 1-4, 2-4, 3-4
-                oseen_tensor,sep_list = oseen(particles)
+                oseen_tensor, sep_lst = oseen(particles)
                 # Mxx = 1- (3*ar_ratio/4)*((rseparation + 2*epsilon_squared) + x*x)/(rseparation + epsilon_squared)**(1.5)
                 # Mxy = - (3*ar_ratio/4)*x*y/(rseparation + epsilon_squared)**(1.5)
                 # Mxz = - (3* ar_ratio/4)*x*z/(rseparation + epsilon_squared)**(1.5)
@@ -124,14 +84,29 @@ def walk(k,max_file,chi_element):
                 # Mmatrix = np.array([[Mxx, Mxy,Mxz],[Mxy,Myy,Myz],[Mxz,Myz,Mzz]])
                 noise_vector = noise_producer(oseen_tensor, chi_element)
                 # Updating new position of particles
-                particles[0] = particles[0]+ np.array([time_step*k*particles[0][1],0,0]) + (time_step*
-                                (sep_list[])/(2*(1-)))
+                particles[0] = particles[0]+ np.array([time_step*k*particles[0][1],0,0]) + (time_step *
+                                                                                            (sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
+                    -oseen_tensor[3:6,0:3].dot(sep_lst[0]) + oseen_tensor[6:9, 0:3].dot(sep_lst[5])
+                    -oseen_tensor[9:12,0:3].dot(sep_lst[5])) + noise_vector[0:3]
 
-                xnew = x + k*y*time_step - time_step*Mmatrix[0].dot(rvector)/(1-rseparation) + noise_vector[0]
-                ynew = y - time_step * Mmatrix[1].dot(rvector) / (1 - rseparation) + noise_vector[1]
-                znew = z - time_step * Mmatrix[2].dot(rvector) / (1 - rseparation) + noise_vector[2]
-                x,y,z = xnew,ynew,znew
-                out.write("{} {} {} {} {}\n".format(time_step * (i + 1), x, y, z,math.sqrt(x*x+z*z+y*y)))
+                particles[1] = particles[1]+ np.array([time_step*k*particles[1][1],0,0]) + (time_step *
+                                                                                            -(sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
+                                oseen_tensor[3:6,0:3].dot(sep_lst[0]) + oseen_tensor[6:9, 3:6].dot(sep_lst[5])
+                                -oseen_tensor[9:12,3:6].dot(sep_lst[5])) + noise_vector[3:6]
+
+                particles[2] = particles[2]+ np.array([time_step*k*particles[2][1],0,0]) + (time_step *
+                                                                                            (sep_lst[5]) / (2 * (1 - np.linalg.norm(sep_lst[5]) ** 2))) + time_step * (
+                    -oseen_tensor[6:9,3:6].dot(sep_lst[0]) + oseen_tensor[6:9, 0:3].dot(sep_lst[0])
+                    -oseen_tensor[9:12,6:9].dot(sep_lst[5])) + noise_vector[6:9]
+
+                particles[3] = particles[3]+ np.array([time_step*k*particles[3][1],0,0]) + (time_step *
+                                                                                            -(sep_lst[5]) / (2 * (1 - np.linalg.norm(sep_lst[5]) ** 2))) + time_step * (
+                                oseen_tensor[9:12,0:3].dot(sep_lst[0]) - oseen_tensor[9:12, 3:6].dot(sep_lst[0])
+                                +oseen_tensor[9:12,6:9].dot(sep_lst[5])) + noise_vector[9:12]
+                polyvec1 = particles[1] - particles[0]
+                polyvec2 = particles[3] - particles[2]
+                out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (i + 1),polyvec1[0],polyvec1[1],polyvec1[2],np.linalg.norm(polyvec1),
+                                                    polyvec2[0], polyvec2[1], polyvec2[2], np.linalg.norm(polyvec2)))
             update_progress(j / (runs))
             out.close()
 
@@ -142,7 +117,7 @@ def oseen(particles):
     for i in range(4):
         for j in range(i):
             # separation vector
-            svec = particles(i) - particles(j)
+            svec = particles[i] - particles[j]
             # separation magnitude
             smagn = np.linalg.norm(svec)
             sep_lst.append(svec)
@@ -156,13 +131,13 @@ def oseen(particles):
 def noise_producer(matrix,chi_element):
     """
     This method calculates the noise exerted on the 2 spheres and returns a 3 dimensional vector.
-    :param matrix: Stokeslet matrix
+    :param matrix: Stokeslet matrix (oseen tensor)
     :return: Random noise vector
     """
-    randgaussnumbers = np.random.normal(0,math.sqrt(chi_element* time_step),12)
     # Creating the sigma matrix
-    sigma_m = np.zeros(12)
+    sigma_m = np.zeros((12,12))
     sigma_m[0,0] = math.sqrt(matrix[0,0])
+    print matrix
     for i in range(12):
         for j in range(i):
             sigma_m[i,j] = matrix[i,j]
@@ -172,7 +147,9 @@ def noise_producer(matrix,chi_element):
                 k += 1
 
             sigma_m[i,j] = sigma_m[i,j]/sigma_m[j,j]
-        sigma_m[i,i] = math.sqrt(matrix[i,i] - np.sum(sigma_m[i]**2))
+        print (sigma_m)
+        print ("/n")
+        sigma_m[i,i] = math.sqrt(matrix[i,i] - np.sum(sigma_m[i,0:i]**2))
 
 
     return sigma_m.dot(np.random.normal(0,math.sqrt(chi_element* time_step),12))
@@ -181,7 +158,7 @@ def analyse():
     This function goes to the folder of the previously run simulation, and averages over
     all the runs (which, because of thermal noise, are different). It writes the mean
     squared separation and mean separation of each constant simulated in a file. It also
-    creates a files with the maximum separation of every constant and at which time it occured
+    creates a file with the maximum separation of every constant and at which time it occurred
     """
 
     os.chdir("Shear_constants:{}-{}_numc:{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],
@@ -214,22 +191,30 @@ def analyse():
             # Adding squared separation and separation together
             # to average noise
             for lines in xrange(steps + 1):
-                s = 0
-                ssq = 0
+                s1 = 0
+                ssq1 = 0
+                s2 = 0
+                ssq2 = 0
 
                 for file in filedata.values():
                     token = str.split(file.readline())
                     # This convenion will most likely change in the 3rd version of the program
                     t = float(token[0])
-                    x = float(token[1])
-                    y = float(token[2])
-                    z = float(token[3])
-                    rsepparation = x*x + y*y + z*z
+                    x1 = float(token[1])
+                    y1 = float(token[2])
+                    z1 = float(token[3])
+                    x2 = float(token[5])
+                    y2 = float(token[6])
+                    z2 = float(token[7])
+                    rsepparation1 = float(token[4])
+                    rsepparation2 = float(token[8])
 
-                    s += rsepparation
-                    ssq += math.sqrt(rsepparation)
-                mss_list[k].write("{} {}\n".format(t, s / runs))
-                ms_list[k].write("{} {}\n".format(t, (ssq / runs)))
+                    s1 += rsepparation1**2
+                    ssq1 += rsepparation1
+                    s2 += rsepparation2 ** 2
+                    ssq2 += rsepparation2
+                mss_list[k].write("{} {} {}\n".format(t, s1 / runs,s2 / runs))
+                ms_list[k].write("{} {} {}\n".format(t, (ssq1 / runs),(ssq2 / runs)))
                 update_progress(lines / (steps))
             for fruns in filedata.values():
                 fruns.close()
@@ -238,8 +223,9 @@ def analyse():
             ms_list[k] = open("ms_{}th_thousand.tmp".format(k), "r")
             mss_list[k] = open("mss_{}th_thousand.tmp".format(k), "r")
 
+        #THIS HAS NOT BEEN UPDATED TO WORK WITH TWO POLYMERS YET
         # This loop goes through the temporary file in ms_list and mss_list and finds the
-        # largest sepparation. It also finds the mean separation and separation squared if
+        # largest separation. It also finds the mean separation and separation squared if
         # the number of runs was more than 1000. If its under 1000 runs then this loop will
         # slow down the computation by a bit.
         # ~~~~~~~~~ NOTE: If computation time is an issue then modify this ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,6 +253,7 @@ def analyse():
         # Max separation squared over initial separation squared is stored in a max file for
         # every constant
         # The loop deletes the unnecessary temporary files
+        init_separation = np.linalg.norm(initial_positions[3:6] - initial_positions[0:3])
         max_file.write("{} {} {}\n".format(v, maxr / (init_separation ** 2), tmax))
         for k in range(thousands_of_runs):
             os.remove(mss_list[k].name)
