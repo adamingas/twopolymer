@@ -75,7 +75,6 @@ def walk(k,max_file,chi_element):
                 # The list of vectors goes like: pointing from particle ()- to particle ()
                 # 1-2, 1-3, 2-3, 1-4, 2-4, 3-4
                 oseen_tensor, sep_lst = oseen(particles)
-                # Mxx = 1- (3*ar_ratio/4)*((rseparation + 2*epsilon_squared) + x*x)/(rseparation + epsilon_squared)**(1.5)
                 # Mxy = - (3*ar_ratio/4)*x*y/(rseparation + epsilon_squared)**(1.5)
                 # Mxz = - (3* ar_ratio/4)*x*z/(rseparation + epsilon_squared)**(1.5)
                 # Myy = 1- (3* ar_ratio/4)*(rseparation + 2*epsilon_squared + y*y)/(rseparation + epsilon_squared)**(1.5)
