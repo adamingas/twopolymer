@@ -63,7 +63,7 @@ def walk(k,max_file,chi_element):
             out = open("Run{}_Wi{}_chi{}".format(j, k,chi_element), "w")
             particles = [np.array(initial_positions[0:3]),np.array(initial_positions[3:6]),
                          np.array(initial_positions[6:9]),np.array(initial_positions[9:12])]
-
+            particles_interm = [None]*4
             polyvec1 = particles[1] - particles[0]
             polyvec2 = particles[3] - particles[2]
             out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (1), polyvec1[0], polyvec1[1], polyvec1[2],
@@ -80,16 +80,27 @@ def walk(k,max_file,chi_element):
                 # Myy = 1- (3* ar_ratio/4)*(rseparation + 2*epsilon_squared + y*y)/(rseparation + epsilon_squared)**(1.5)
                 # Myz = - (3* ar_ratio/4)*y*z/(rseparation + epsilon_squared)**(1.5)
                 # Mzz = 1- (3* ar_ratio/4)*((rseparation + 2*epsilon_squared) + z*z)/(rseparation + epsilon_squared)**(1.5)
-                # Mmatrix = np.array([[Mxx, Mxy,Mxz],[Mxy,Myy,Myz],[Mxz,Myz,Mzz]])
                 noise_vector = noise_producer(oseen_tensor, chi_element)
                 # Updating new position of particles
+                particles_interm[0] = particles[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part1]
+                particles_interm[1] = particles[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part2]
+                particles_interm[2] = particles[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part3]
+                particles_interm[3] = particles[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part4]
+
+                oseen_tensor, sep_lst = oseen(particles_interm)
+
+                particles[0] = particles_interm[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles,oseen_tensor,k) + noise_vector[Part1]
+                particles[1] = particles_interm[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k) + noise_vector[Part2]
+                particles[2] = particles_interm[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles,oseen_tensor,k) + noise_vector[Part3]
+                particles[3] = particles_interm[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k) + noise_vector[Part4]
+
                 particles[0] = particles[0]+ np.array([time_step*k*particles[0][1],0,0]) + (time_step *
-                                                                                            (sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
+                    (sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
                     -oseen_tensor[3:6,0:3].dot(sep_lst[0]) + oseen_tensor[6:9, 0:3].dot(sep_lst[5])
                     -oseen_tensor[9:12,0:3].dot(sep_lst[5])) + noise_vector[0:3]
 
                 particles[1] = particles[1]+ np.array([time_step*k*particles[1][1],0,0]) + (time_step *
-                                                                                            -(sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
+                                 -(sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
                                 oseen_tensor[3:6,0:3].dot(sep_lst[0]) + oseen_tensor[6:9, 3:6].dot(sep_lst[5])
                                 -oseen_tensor[9:12,3:6].dot(sep_lst[5])) + noise_vector[3:6]
 
@@ -109,6 +120,26 @@ def walk(k,max_file,chi_element):
             update_progress(j / (runs))
             out.close()
 
+def function(refparticle,refparticlepair,particle3,particle4,sepvec,sepvec2, particles, oseen_tensor,k):
+
+    """
+
+    :param refparticle: The particle on which the force acts on
+    :param refparticlepair: The particle on the same chain of the reference particle
+    :param particle3: The 3rd particle
+    :param particle4: The 4th particle
+
+    :param sepvec: Separation vector from reference particle to its pair on the same chain
+    :param sepvec2: Separation vector between the other two particles from smallest particle number
+                    to largest (1 to 2, or, 3 to 4)
+    :param particles:
+    :return: The velocity of the reference particle at the current time step
+    """
+    vector = np.array([ k * particles[int(refparticle[0]/3)][1], 0, 0]) + (
+            (sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) +  (
+        -oseen_tensor[refparticlepair, refparticle].dot(sepvec) + oseen_tensor[particle3, refparticle].dot(sepvec2)
+        - oseen_tensor[particle4, refparticle].dot(sepvec2))
+    return vector
 def oseen(particles):
     # Construct list of separations between particles
     sep_lst = []
@@ -118,15 +149,15 @@ def oseen(particles):
             # separation vector
             svec = particles[i] - particles[j]
             # separation magnitude
-            smagn = np.linalg.norm(svec)
+            smagn = np.linalg.norm(svec)**2
             sep_lst.append(svec)
             # The units might not be correct
-            oseen_tensor[i*3:(i+1)*3,j*3:(j+1)*3] = (3*ar_ratio/8)*(np.identity(3) + (np.outer(svec,svec))/smagn**2)/smagn
-            # Find the regularised stokeslet or no need??
+            oseen_tensor[i*3:(i+1)*3,j*3:(j+1)*3] = (3*ar_ratio/8)*(np.identity(3)*(smagn + 2*epsilon_squared)+ (np.outer(svec,svec)))/(smagn +epsilon_squared)**(1.5)
 
-    # Filling in the diagonal elements of the oseen tensor
+    # Filling in the diagonal elements of the oseen tensor and returning the symmetric matrix
+
     np.fill_diagonal(oseen_tensor,1/2)
-    return oseen_tensor,sep_lst
+    return np.maximum(oseen_tensor,oseen_tensor.T),sep_lst
 def noise_producer(matrix,chi_element):
     """
     This method calculates the noise exerted on the 2 spheres and returns a 3 dimensional vector.
@@ -136,7 +167,6 @@ def noise_producer(matrix,chi_element):
     # Creating the sigma matrix
     sigma_m = np.zeros((12,12))
     sigma_m[0,0] = math.sqrt(matrix[0,0])
-    print matrix
     for i in range(12):
         for j in range(i):
             sigma_m[i,j] = matrix[i,j]
@@ -377,9 +407,6 @@ if __name__ == "__main__":
     runs = int(config.runs)
     constant = config.constant #Weissenberg numbers in a numpy array
     time_step = float(config.time_step)
-    # yinitial= float(config.yinitial)
-    # xinitial = float(config.xinitial)
-    # zinitial = float(config.zinitial)
     initial_positions = config.initial_positions
     # init_separation = math.sqrt(xinitial**2 + yinitial**2 + zinitial**2)
     hydro = str(config.hydro)
@@ -387,6 +414,11 @@ if __name__ == "__main__":
     noise = str(config.noise)
     chi = config.chi
     epsilon_squared = 4*ar_ratio*ar_ratio
+    # Lists that signify particle position in the Oseen tensor to make code more readable
+    Part1 = range(0,3)
+    Part2 = range(3,6)
+    Part3 = range(6,9)
+    Part4 = range(9,12)
     parser = argparse.ArgumentParser(description="Program version 2"
                                                  "The program simulates the motion of a polymer in shear flow.\n "
                                                  "The model is of a finite extensibility non-linear elastic spring"
