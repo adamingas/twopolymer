@@ -20,43 +20,7 @@ def walk(k,max_file,chi_element):
     interactions and thermal noise.
     k is the weissenberg number
     """
-    # No hydrodynamic interaction and no noise
 
-    # Hydrodynamic interactions but not noise
-    #if str.upper(noise) in ("NO","N","NO NOISE"):
-
-        #for j in xrange(runs):
-        #     out = open("Run{}_Wi{}_chi{}".format(j, k,chi_element), "w")
-        #     z = zinitial
-        #     x = xinitial
-        #     y = yinitial
-        #     rseparation = x * x + y * y + z*z
-        #     out.write("{} {} {} {}\n".format(0, x, y, z))
-        #     maxr = rseparation
-        #     tmax = 0
-        #     for i in xrange(steps):
-        #         rseparation = x * x + y * y +z*z
-        #         ynew = y + time_step*(1/(1+3/(4*math.sqrt(rseparation)*ar_ratio)))*(-y/(1-rseparation) +
-        #             (1/(ar_ratio*math.sqrt(rseparation)*(4/3) + 2))*(-y*y*x*k/rseparation +
-        #             (y*y*y + y*x*x + y*z*z)/((1-rseparation)*rseparation)))
-        #
-        #         xnew = x + time_step * (1 / (1 + 3 / (4 * math.sqrt(rseparation) * ar_ratio))) * (k*y
-        #         -x / (1 - rseparation) +(1 / (ar_ratio * math.sqrt(rseparation)*(4/3) + 2)) * (-y * x * x * k / rseparation
-        #         + (x * x * x + x * y * y + x*z*z) / ((1 - rseparation) * rseparation)))
-        #
-        #         znew = z + time_step * (1 / (1 + 3 / (4 * math.sqrt(rseparation) * ar_ratio))) * (
-        #                 -z / (1 - rseparation) +(1 / (ar_ratio * math.sqrt(rseparation) * (4 / 3) + 2)) * (-z*y*x*k/rseparation +
-        #                 (z*y*y + z*x*x + z*z*z) / ((1 - rseparation) * rseparation)))
-        #         x, y, z = xnew, ynew, znew
-        #         # Finding out largest separation squared
-        #         if maxr <= x * x + y * y + z*z and args.max:
-        #             maxr = x * x + y * y +z*z
-        #             tmax = (i+1) * time_step
-        #         out.write("{} {} {} {}\n".format(time_step * (i + 1), x, y, z))
-        #     if args.max:
-        #         max_file.write("{} {} {}\n".format(k, maxr / (init_separation ** 2), tmax))
-        #     update_progress(j / (runs))
-        #     out.close()
 
     if str.upper(noise) in ("YES","Y","NOISE"):
         for j in xrange(runs):
@@ -66,8 +30,12 @@ def walk(k,max_file,chi_element):
             particles_interm = [None]*4
             polyvec1 = particles[1] - particles[0]
             polyvec2 = particles[3] - particles[2]
-            out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (1), polyvec1[0], polyvec1[1], polyvec1[2],
-            np.linalg.norm(polyvec1),polyvec2[0], polyvec2[1], polyvec2[2],np.linalg.norm(polyvec2)))
+            # out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (1), polyvec1[0], polyvec1[1], polyvec1[2],
+            # np.linalg.norm(polyvec1),polyvec2[0], polyvec2[1], polyvec2[2],np.linalg.norm(polyvec2)))
+            out.write("{} {} {} {} {}\n".format(0, str(particles[0]).strip("array([,])"),
+                        str(particles[1]).strip("array([,])"), str(particles[2]).strip("array([,])"),
+                        str(particles[3]).strip("array([,])")))
+
             for i in xrange(steps):
 
 
@@ -75,12 +43,8 @@ def walk(k,max_file,chi_element):
                 # The list of vectors goes like: pointing from particle ()- to particle ()
                 # 1-2, 1-3, 2-3, 1-4, 2-4, 3-4
                 oseen_tensor, sep_lst = oseen(particles)
-                # Mxy = - (3*ar_ratio/4)*x*y/(rseparation + epsilon_squared)**(1.5)
-                # Mxz = - (3* ar_ratio/4)*x*z/(rseparation + epsilon_squared)**(1.5)
-                # Myy = 1- (3* ar_ratio/4)*(rseparation + 2*epsilon_squared + y*y)/(rseparation + epsilon_squared)**(1.5)
-                # Myz = - (3* ar_ratio/4)*y*z/(rseparation + epsilon_squared)**(1.5)
-                # Mzz = 1- (3* ar_ratio/4)*((rseparation + 2*epsilon_squared) + z*z)/(rseparation + epsilon_squared)**(1.5)
-                noise_vector = noise_producer(oseen_tensor, chi_element)
+                # Chi_element is divided by two because the time step is half in the intermediate step
+                noise_vector = noise_producer(oseen_tensor, chi_element/2)
                 # Updating new position of particles
                 particles_interm[0] = particles[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part1]
                 particles_interm[1] = particles[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part2]
@@ -88,35 +52,20 @@ def walk(k,max_file,chi_element):
                 particles_interm[3] = particles[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part4]
 
                 oseen_tensor, sep_lst = oseen(particles_interm)
+                noise_vector = noise_producer(oseen_tensor, chi_element)
 
                 particles[0] = particles_interm[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles,oseen_tensor,k) + noise_vector[Part1]
                 particles[1] = particles_interm[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k) + noise_vector[Part2]
                 particles[2] = particles_interm[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles,oseen_tensor,k) + noise_vector[Part3]
                 particles[3] = particles_interm[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k) + noise_vector[Part4]
 
-                particles[0] = particles[0]+ np.array([time_step*k*particles[0][1],0,0]) + (time_step *
-                    (sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
-                    -oseen_tensor[3:6,0:3].dot(sep_lst[0]) + oseen_tensor[6:9, 0:3].dot(sep_lst[5])
-                    -oseen_tensor[9:12,0:3].dot(sep_lst[5])) + noise_vector[0:3]
 
-                particles[1] = particles[1]+ np.array([time_step*k*particles[1][1],0,0]) + (time_step *
-                                 -(sep_lst[0]) / (2 * (1 - np.linalg.norm(sep_lst[0]) ** 2))) + time_step * (
-                                oseen_tensor[3:6,0:3].dot(sep_lst[0]) + oseen_tensor[6:9, 3:6].dot(sep_lst[5])
-                                -oseen_tensor[9:12,3:6].dot(sep_lst[5])) + noise_vector[3:6]
-
-                particles[2] = particles[2]+ np.array([time_step*k*particles[2][1],0,0]) + (time_step *
-                                                                                            (sep_lst[5]) / (2 * (1 - np.linalg.norm(sep_lst[5]) ** 2))) + time_step * (
-                    -oseen_tensor[6:9,3:6].dot(sep_lst[0]) + oseen_tensor[6:9, 0:3].dot(sep_lst[0])
-                    -oseen_tensor[9:12,6:9].dot(sep_lst[5])) + noise_vector[6:9]
-
-                particles[3] = particles[3]+ np.array([time_step*k*particles[3][1],0,0]) + (time_step *
-                                                                                            -(sep_lst[5]) / (2 * (1 - np.linalg.norm(sep_lst[5]) ** 2))) + time_step * (
-                                oseen_tensor[9:12,0:3].dot(sep_lst[0]) - oseen_tensor[9:12, 3:6].dot(sep_lst[0])
-                                +oseen_tensor[9:12,6:9].dot(sep_lst[5])) + noise_vector[9:12]
-                polyvec1 = particles[1] - particles[0]
-                polyvec2 = particles[3] - particles[2]
-                out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (i + 1),polyvec1[0],polyvec1[1],polyvec1[2],np.linalg.norm(polyvec1),
-                                                    polyvec2[0], polyvec2[1], polyvec2[2], np.linalg.norm(polyvec2)))
+                # polyvec1 = particles[1] - particles[0]
+                # polyvec2 = particles[3] - particles[2]
+                # out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (i + 1),polyvec1[0],polyvec1[1],polyvec1[2],np.linalg.norm(polyvec1),
+                #                                     polyvec2[0], polyvec2[1], polyvec2[2], np.linalg.norm(polyvec2)))
+                out.write("{} {} {} {} {}\n".format(time_step * (i), str(particles[0]).strip("array([,])"),
+                str(particles[1]).strip("array([,])"),str(particles[2]).strip("array([,])"),str(particles[3]).strip("array([,])")))
             update_progress(j / (runs))
             out.close()
 
@@ -176,8 +125,6 @@ def noise_producer(matrix,chi_element):
                 k += 1
 
             sigma_m[i,j] = sigma_m[i,j]/sigma_m[j,j]
-        print (sigma_m)
-        print ("/n")
         sigma_m[i,i] = math.sqrt(matrix[i,i] - np.sum(sigma_m[i,0:i]**2))
 
 
@@ -190,130 +137,150 @@ def analyse():
     creates a file with the maximum separation of every constant and at which time it occurred
     """
 
-    os.chdir("Shear_constants:{}-{}_numc:{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],
-    constant[-1],len(constant),hydro, steps,time_step, ar_ratio,noise))
-    max_file = open("AMax_File_con"
-                    ":{}-{}_numc:{}_h{}_s{}_ts{}_ra{}_n{}".format(
-        constant[0], constant[-1], len(constant), hydro, steps, time_step, ar_ratio, noise), "w")
-    max_file.write("#Constant, Maxseparation over initial separation, time of max separation\n")
 
-    for v in constant:
-        #Rfile = open(os.getcwd() + "/Results.out", "a")
+    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
+    # max_file = open("AMax_File_con"
+    #                 ":{}-{}_numc:{}_h{}_s{}_ts{}_ra{}_n{}".format(
+    #     constant[0], constant[-1], len(constant), hydro, steps, time_step, ar_ratio, noise), "w")
+    # max_file.write("#Constant, Maxseparation over initial separation, time of max separation\n")
 
-        out = open("MSS_{}_{}_{}_{}_{}_{}.out".format(v,hydro, steps,time_step,ar_ratio,noise), "w")
-        nout = open("MS_{}_{}_{}_{}_{}_{}.out".format(v,hydro, steps,time_step,ar_ratio,noise), "w")
+    for x in chi:
+        for v in constant:
+            #Rfile = open(os.getcwd() + "/Results.out", "a")
+            # results is the file where all the results will be printed out
+            results = open("RES_{}_{}_{}_{}_{}_{}.out".format(v, x, steps, time_step, ar_ratio, noise), "w")
 
-        #The following way of reading files is because of a limitation
-        #in the number of files a computer can have open at the same time
-        thousands_of_runs = int(math.ceil(runs / 1000))
-        ms_list = []
-        mss_list = []
-        # Reads every thousand runs of a simulation
-        for k in range(thousands_of_runs):
-            # Opens the first 1000 runs in a dictionary, then opens the next 1000 and so on.
-            filedata = {i: open("Run{}_Wi{}_chi{}".format(i,v), "r") for i in xrange(k * 1000, min(runs, (k + 1) * 1000))}
-            # Mean separation and Mean square separation lists that contain temporary files
-            # with the respective values for every thousand runs. They are deleted afterwards
-            ms_list.append(open("ms_{}th_thousand.tmp".format(k), "w"))
-            mss_list.append(open("mss_{}th_thousand.tmp".format(k), "w"))
+            results.write("# Time-step, Mean Separation1, Mean Squared Separation1, Mean Separation2, Mean Squared Separation2, Mean COM separation \n")
 
-            # Adding squared separation and separation together
-            # to average noise
-            for lines in xrange(steps + 1):
-                s1 = 0
-                ssq1 = 0
-                s2 = 0
-                ssq2 = 0
+            #The following way of reading files is because of a limitation
+            #in the number of files a computer can have open at the same time
+            thousands_of_runs = int(math.ceil(runs / 1000))
+            averages_list = []
 
-                for file in filedata.values():
-                    token = str.split(file.readline())
-                    # This convenion will most likely change in the 3rd version of the program
-                    t = float(token[0])
-                    x1 = float(token[1])
-                    y1 = float(token[2])
-                    z1 = float(token[3])
-                    x2 = float(token[5])
-                    y2 = float(token[6])
-                    z2 = float(token[7])
-                    rsepparation1 = float(token[4])
-                    rsepparation2 = float(token[8])
-
-                    s1 += rsepparation1**2
-                    ssq1 += rsepparation1
-                    s2 += rsepparation2 ** 2
-                    ssq2 += rsepparation2
-                mss_list[k].write("{} {} {}\n".format(t, s1 / runs,s2 / runs))
-                ms_list[k].write("{} {} {}\n".format(t, (ssq1 / runs),(ssq2 / runs)))
-                update_progress(lines / (steps))
-            for fruns in filedata.values():
-                fruns.close()
-            ms_list[k].close()
-            mss_list[k].close()
-            ms_list[k] = open("ms_{}th_thousand.tmp".format(k), "r")
-            mss_list[k] = open("mss_{}th_thousand.tmp".format(k), "r")
-
-        #THIS HAS NOT BEEN UPDATED TO WORK WITH TWO POLYMERS YET
-        # This loop goes through the temporary file in ms_list and mss_list and finds the
-        # largest separation. It also finds the mean separation and separation squared if
-        # the number of runs was more than 1000. If its under 1000 runs then this loop will
-        # slow down the computation by a bit.
-        # ~~~~~~~~~ NOTE: If computation time is an issue then modify this ~~~~~~~~~~~~~~~~~~~~~~~~~~
-        print "~~~~~~~Merging and finding Max value~~~~~~~~~"
-        maxr = 0
-        tmax = 0
-        for j in xrange(steps + 1):
-            mean_mss = 0
-            mean_ms = 0
-
+            # Reads every thousand runs of a simulation
             for k in range(thousands_of_runs):
-                mstoken = str.split(ms_list[k].readline())
-                msstoken = str.split(mss_list[k].readline())
-                t = float(mstoken[0])
-                mssn = float(msstoken[1])
-                msn = float(mstoken[1])
-                mean_mss += mssn
-                mean_ms += msn
+                print ("i am in {}".format(k))
+                # Opens the first 1000 runs in a dictionary, then opens the next 1000 and so on.
+                filedata = {i: open("Run{}_Wi{}_chi{}".format(i,v,x), "r") for i in xrange(k * 1000, min(runs, (k + 1) * 1000))}
+                # Mean separation and Mean square separation lists that contain temporary files
+                # with the respective values for every thousand runs. They are deleted afterwards
+                # Averages_list contains temporary files which hold the average values of various parameters for every
+                # thousand runs of the simulation
+                averages_list.append(open("averages_{}th_thousand.tmp".format(k), "w"))
 
-            out.write("{} {}\n".format(t, mean_mss))
-            nout.write("{} {}\n".format(t, mean_ms))
-            if maxr <= mean_mss:
-                maxr = mean_mss
-                tmax = t
-        # Max separation squared over initial separation squared is stored in a max file for
-        # every constant
-        # The loop deletes the unnecessary temporary files
-        init_separation = np.linalg.norm(initial_positions[3:6] - initial_positions[0:3])
-        max_file.write("{} {} {}\n".format(v, maxr / (init_separation ** 2), tmax))
-        for k in range(thousands_of_runs):
-            os.remove(mss_list[k].name)
-            os.remove(ms_list[k].name)
-        out.close()
-        nout.close()
-        meansqsep = float(str.split(linecache.getline(out.name, steps + 1))[1])
-        meansep = float(str.split(linecache.getline(nout.name, steps + 1))[1])
-        #print("Mean squared separation over {} runs: {} ".format(runs, meansqsep))
-        #print("Root Mean squared separation over {} runs: {} ".format(runs, math.sqrt(meansqsep)))
-        #print ("Mean separation over {} runs : {}".format(runs, meansep))
-        # Appending the results at the end of the Results.out file
-        # Rfile.write("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~R E S U L T S~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n")
-        # Rfile.write(
-        #     "Time-Step:{} Steps:{} runs:{} constant:{} Initial separation:{} hydro: {} time&date: {} \n".format(time_step,
-        #                                                                                                         steps, runs,
-        #                                                                                                         constant[j],
-        #                                                                                                         init_separation,
-        #                                                                                                         hydro,
-        #                                                                                                         time.strftime(
-        #                                                                                                             "%c")))
-        # Rfile.write("Mean Squared separation {}\n".format(meansqsep))
-        # Rfile.write("Root Mean squared separation {}\n".format(math.sqrt(meansqsep)))
-        # Rfile.write("Mean separation {}\n".format(meansep))
-        # Rfile.close()
-        # Mean squared displacement. Each row has a colour of the rainbow.
-        # if args.walk:
-        #     os.chdir("Max_Separation_constants:{}-{}_numc:{}".format(constant[0],constant[-1],len(constant)))
-        #     max_file = open("Max_Separation_constants:{}-{}_numc:{}".format(constant[0],constant[-1],len(constant)),"w")
-        #     for n,j in enumerate(constant):
 
+                # Adding squared separation and separation together
+                # to average noise
+                for lines in xrange(steps + 1):
+                    # sepsq1 and 2 are the separations squared of the polymers. sep1 and 2 are the separations.
+                    # comsep is the separation between the centres of mass of the two polymers.
+                    sepsq1 = 0
+                    sep1 = 0
+                    sepsq2 = 0
+                    sep2 = 0
+                    comsep = 0
+
+                    for file in filedata.values():
+                        token = str.split(file.readline())
+                        t = float(token[0])
+                        particles = []
+                        for i in range(4):
+                            particles.append(np.array([float(token[3*i +j]) for j in range(3)]))
+                        # Polymer separation vector and centre of mass vecotr
+                        polyvec1 = particles[1] - particles[0]
+                        polymagn1 = np.linalg.norm(polyvec1)
+                        polyvec2 = particles[3] - particles[2]
+                        polymagn2 = np.linalg.norm(polyvec2)
+                        comvec = (particles[3] + particles[2] - particles[1] - particles[0])/2
+                        commag = np.linalg.norm(comvec)
+                        # Angle with shear axis
+                        # angle1 = np.degrees(np.arccos(np.clip(np.dot(polyvec1,np.array([1,0,0]))/polymagn1,-1.0,1.0)))
+                        # angle2 = np.degrees(np.arccos(np.clip(np.dot(polyvec2, np.array([1, 0, 0])) / polymagn2, -1.0, 1.0)))
+
+
+                        sepsq1 += polymagn1 ** 2
+                        sep1 += polymagn1
+                        sepsq2 += polymagn2 ** 2
+                        sep2 += polymagn2
+                        comsep += commag
+                    averages_list[k].write("{} {} {} {} {} {}\n".format(t,sep1/runs, sepsq1 / runs,sep2/runs, sepsq2 / runs,comsep/runs))
+
+                    update_progress(lines / (steps))
+                for fruns in filedata.values():
+                    fruns.close()
+                averages_list[k].close()
+
+                averages_list[k] = open("averages_{}th_thousand.tmp".format(k), "r")
+
+
+            # This loop goes through the temporary file in averages_list and finds the
+            # mean separation and separation squared of the two polymers, and the average separation between them
+            # if the number of runs was more than 1000. If its under 1000 runs then this loop will
+            # slow down the computation by a bit.
+            # ~~~~~~~~~ NOTE: If computation time is an issue then modify this ~~~~~~~~~~~~~~~~~~~~~~~~~~
+            print "~~~~~~~ Merging ~~~~~~~~~"
+            maxr = 0
+            tmax = 0
+            for j in xrange(steps + 1):
+
+                mean_sep1 =0
+                mean_sep2 = 0
+                mean_sepsq1 = 0
+                mean_sepsq2 = 0
+                mean_comsep = 0
+
+                for k in range(thousands_of_runs):
+                    # Reading the averaged parameters and averages the again for every thousand runs
+                    token = str.split(averages_list[k].readline())
+                    # mstoken = str.split(ms_list[k].readline())
+                    # msstoken = str.split(mss_list[k].readline())
+                    t = float(token[0])
+                    mean_sep1 += float(token[1])
+                    mean_sep2 += float(token[3])
+                    mean_sepsq1 += float(token[2])
+                    mean_sepsq2 += float(token[4])
+                    mean_comsep += float(token[5])
+                results.write("{} {} {} {} {} {}\n".format(t,mean_sep1,mean_sepsq1,mean_sep2,mean_sepsq2,mean_comsep))
+
+                # if maxr <= mean_mss:
+                #     maxr = mean_mss
+                #     tmax = t
+            # Max separation squared over initial separation squared is stored in a max file for
+            # every constant
+            # The loop deletes the unnecessary temporary files
+            # init_separation = np.linalg.norm(initial_positions[3:6] - initial_positions[0:3])
+            # max_file.write("{} {} {}\n".format(v, maxr / (init_separation ** 2), tmax))
+            for k in range(thousands_of_runs):
+                os.remove(averages_list[k].name)
+
+            results.close()
+    os.chdir("..")
+    print os.getcwd()
+def maximum():
+    """
+    This method calculates the maximum separation between the polymers and the maximum separation
+    between particles of the same polymer
+    :return:
+    """
+    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
+    for j,chi_element in enumerate(chi):
+        max_file = open("MAX_chi:{}_Wi:{}-{}_numWi:{}".format( chi_element,constant[0], constant[-1], len(constant)),"w")
+        max_file.write("Weisenberg, Max mean squared separation 1, Max mean squared separation 2, Max COM separation \n")
+        for i,wi in enumerate(constant):
+            results_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}.out".format(wi, chi_element, steps, time_step, ar_ratio, noise),skiprows=1)
+            initial_sepsq1 = results_array[0,2]
+            initial_sepsq2 = results_array[0, 4]
+            max_sepsq1 = np.amax(results_array[:,2])
+            max_sepsq2 = np.amax(results_array[:, 4])
+            max_comsep = np.amax(results_array[:, 5])
+
+            max_file.write("{} {} {} {}\n".format(wi,max_sepsq1/initial_sepsq1,max_sepsq2/initial_sepsq2,max_comsep))
+            print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
+        print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
+    max_file.close()
+    os.chdir("..")
 def average_sepparation():
     os.chdir("Shear_Wi:{}-{}_chi:{}-{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
     chi[0], chi[-1], hydro, steps,time_step, ar_ratio, noise))
@@ -350,13 +317,13 @@ def simulate():
     #This code simulates the walk of the polymer and stores the max separation in a file
 
     try:
-        os.mkdir("Shear_Wi:{}-{}_chi:{}-{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
-        chi[0],chi[-1],hydro,steps,time_step,ar_ratio,noise))
+        os.mkdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
     except OSError as e:
         if e.errno != 17:
             raise
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
-        chi[0],chi[-1],hydro,steps,time_step,ar_ratio,noise))
+    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
     if args.max:
         max_file = open("Max_File_con"
                         ":{}-{}_numc:{}_h{}_s{}_ts{}_ra{}_n{}".format(
@@ -370,7 +337,7 @@ def simulate():
             walk(j,max_file,k)
             print("wi number {} done, {} left".format(j,len(constant)-n -1))
         print("chi number {} done, {} left".format(k, len(chi) -o-1))
-
+    os.chdir("..")
 
 def update_progress(progress):
     barLength = 10  # Modify this to change the length of the progress bar
@@ -449,3 +416,5 @@ if __name__ == "__main__":
         average_sepparation()
     if args.angle:
         angle()
+    if args.max:
+        maximum()
