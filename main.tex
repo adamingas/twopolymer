@@ -1,0 +1,114 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{mathtools}
+\usepackage{amsmath}
+
+
+\title{Equations of Motion \\
+\large Derivations of the equations of motion of two interacting polymers in a fluid.}
+\author{Adamos Spanashis}
+\date{February 2018}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+There are two forces that act on each particle. The drag force that is due the particles motion through the fluid, and a conservative force due to the spring that connects two particles together. In this simulation there are two polymers, and each of them has two particles connected to each other by a FENE spring.
+
+\begin{align}
+    \intertext{Forces on particle $l$}
+    \widetilde{\vec{F}^{l}_{D}} + \widetilde{\vec{F}^{l}}_{Spring} = 0\\
+    %
+    \intertext{From now on $\widetilde{\vec{F}}_{Spring}$ will be denoted as $\widetilde{\vec{F}}$. $\widetilde{\vec{v}^{l \to m}}$ is the velocity of the fluid at particle's m position due to particle's l motion. $\widetilde{\vec{v}}_{shear}$ is the velocity of the fluid due to shear. $ \widetilde{\alpha}$ is the particle's radius and $\mu $ is the viscosity of the fluid.}
+    %
+    \widetilde{\vec{F}^{1}_{D}}(\widetilde{\vec{r^{1}}}) = -6\pi \mu \widetilde{\alpha} \left(\widetilde{\vec{\dot{r}}^{1}} - \underbrace{\left( \sum_{l \neq 1}  \widetilde{\vec{v}^{l \to 1}}(\widetilde{\vec{r^{1}}}) + \widetilde{\vec{v}}_{shear}(\widetilde{\vec{r^{1}}}) \right)}_{\text{Velocity of fluid around particle}}\right) \\
+    %
+    \intertext{$\widetilde{\vec{R}^{ml}} = \widetilde{\vec{r}^l} - \widetilde{\vec{r}^m}$ is the separation of particles m and l, and $R_{max}^{ml}$ is the maximum separation between them. An example of the conservative force acting on particle 1 is:}
+    %
+    \widetilde{\vec{F}^1}(\widetilde{\vec{r}_1}) = \frac{H \widetilde{\vec{R}^{12}}}{1-\frac{\|\widetilde{R^{12}}\|^2}{\|R^{12}_{max}\|^2}} \label{eq:spring}
+\end{align}
+The velocity field caused by the motion of particle l to the fluid in particle's m position is the regularised stokeslet. The following equation is expressed in tensor notation, with indices displayed at the bottom part the tensor, and the particles it concerns as superscript. The velocity field can also be written as the product of the Oseen tensor and the force acting on particle l. The i and j indices in this case belong to different particles (e.g. i can be the x component of particle l and j can be the y component of particle m, with $\widetilde{R^{lm}_i}$ being the vector between them)
+\begin{align}
+%STOKESLET AND OSEEN TENSOR
+        \widetilde{v^{l \to m}}(\vec{r}^{m})_i &= \frac{1}{8 \pi \mu } \left[ \delta_{ij} \frac{\|\widetilde{R^{lm}}\|^2 + 2\epsilon^2}{(\|\widetilde{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{\widetilde{R_i^{lm}} \widetilde{R_j^{lm}}}{(\|\widetilde{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} \right]\cdot \widetilde{F^{l}_{j}} \\
+        &= \frac{\widetilde{D_{ij}^{lm}}}{kT} \cdot \widetilde{F^{l}_{j}}
+\end{align}
+When the i and j components belong to the same particle then the Oseen tensor takes the form of: $$\widetilde{ D_{ij}^{mm}} = \frac{kT \cdot \delta_{ij}}{6 \pi \mu \widetilde{\alpha}} $$
+The following equation is the equation of motion for particle 1. The first term on the right hand side is the sum over all hydrodynamic interaction between the $1^ {st}$ and all the other particles. The second term is the velocity field caused by the shear. The third term is the conservative force acting on particle 1. The last term is the random noise.
+\begin{align}
+%EQUATION OF MOTION
+   \widetilde{ \vec{\dot{r}}^{1}} &= \sum_{l \neq 1}  \widetilde{\vec{v}^{l \to 1}}(\widetilde{\vec{r^{1}}}) +  \widetilde{\vec{v}}_{shear}(\widetilde{\vec{r^{1}}}) + \frac{\widetilde{\vec{F}^{1}}(\widetilde{\vec{r_{1}}})}{6\pi \mu \tilde{\alpha} } +\widetilde{\vec{\Psi}} \\
+    \widetilde{\dot{r}_{i}^{1}} &= \sum_{l \neq 1}  \frac{\widetilde{D_{ij}^{l1}} }{kT} \cdot \widetilde{F^{l}_{j}} + \dot{\gamma} \widetilde{\dot{r}_{y}^{1}}\cdot e_{x} + \frac{\widetilde{F^{1}_{j}} (\widetilde{\vec{r^{1}}}) \cdot \widetilde{D_{ij}^{11}} }{kT } +\widetilde{\Psi_{i}}
+\end{align}
+
+
+\subsection{Dimensionless}
+
+
+
+\begin{align}
+    \intertext{Dimensionless quantities are marked without a tilde}
+    \widetilde{R_i} &= R_{max}{R_i}\\
+    \tilde{\alpha }&= R_{max} {\alpha}\\
+    \tilde{t} &= \frac{3\pi \mu \tilde{\alpha}}{H}{t} = \lambda_m {t} \\
+    \intertext{Weissenberg number:}
+    Wi &= \frac{3\pi \mu \tilde{\alpha}}{H}\dot{\gamma} =  \lambda_m \dot{\gamma}\\
+    \chi &= \frac{2k_B T}{H R^2_{max}} \\
+    \widetilde{\Psi} &= R_{max}{\Psi} 
+\end{align}
+To make sense of the units in the equation, the units are taken out of the Oseen tensor and the conservative force. The letter $\Psi$ is used to denote the noise caused on the velocity of the particle. The noise on the position is thus $$ \xi = \Psi \Delta t$$
+\begin{align}
+%MAKING THE EQUATIONS OF MOTIONS DIMENSIONLESS
+\begin{split}
+    \frac{R_{max}}{\lambda_m}{\dot{r}}_{i}^{1} &= \sum_{l \neq m}  \frac{1}{R_{max} \mu \pi} {D_{ij}^{lm}} \cdot H\cdot R_{max} { F^{l}}_{j}   \\& +  \frac{{F^{1}}_{j} (\vec{r^{1}}) \cdot H \cdot R_{max} D_{ij}^{mm}}{ \pi \mu \alpha} \\& + R_{max}\dot{\gamma} {\dot{r}_{y}^{1}}\cdot e_{x}+{\Psi_{i}} \cdot R_{max}
+\end{split} 
+\end{align}
+
+
+
+The dimensionless Oseen tensor and the force between two particles in the same chain is shown in the following expression. 
+\begin{align}
+    {D_{ij}^{lm}} &= \frac{1}{8 }\left[ \delta_{ij} \frac{\|R^{lm}\|^2 + 2\epsilon^2}{(\|R^{lm}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{R_i^{lm}R_j^{lm}}{(\|R^{lm}\|^2 + \epsilon ^2)^\frac{3}{2}} \right]\\
+    {F^{1}}_{i}  &= \frac{{R}^{12}_{i}}{1 - \|{R^{12}}\|^2} \\
+\begin{split}
+    {\dot{r}}_{i}^{1} &=\sum_{l \neq m} 3 {a}{D_{ij}^{lm}} \cdot { F^{l}}_{j} +3{D_{ij}^{mm}} \cdot { F^{l}}_{j} \\&+
+    {\dot{r}_{y}^{1}}\cdot e_{x} \cdot Wi + {\Psi_{i}} \lambda_m
+\end{split}\\
+    {\dot{r}}_{i}^{1} &= f({r^{1}_{i}},{r^{2}_{i}},{r^{3}_{i}},{r^{4}_{i}})_{i} +   {\Psi_{i}} \lambda_m
+\end{align}
+The right hand side of the above equation, except for the noise, was changed to a function $f$ dependent on the dimensionless position of all the particles. This is calculated separately in a method of the program (called function).
+To integrate the expression and find the position of each particle, the Predictor-Corrector method is used. The starred position is an intermediate step between the position at time $t$ and at time $t +\Delta t$. (QUESTION: Should the noise be included in both steps of the integration method?)
+\begin{align}
+    {r}_{i}^{1}(t)^{*} &={r}_{i}^{1}(t)+ \frac{\Delta t}{2} f({r^{1}_{i}}(t),{r^{2}_{i}}(t),{r^{3}_{i}}(t),{r^{4}_{i}}(t))_{i} +   {\xi_{i}}  \\
+    {r}_{i}^{1}(t+\Delta t) &= {r}_{i}^{1}(t)+\Delta t  f({r^{1}_{i}}(t)^{*},{r^{2}_{i}}(t)^{*},{r^{3}_{i}}(t)^{*},{r^{4}_{i}}(t)^{*})_{i} +   {\xi_{i}}  
+\end{align}
+For convenience, the Oseen tensor is redefined to include the factor $3 {\alpha}$ (when the particles l and m are different).
+\begin{align}
+    {D_{ij}^{lm}} &= \frac{3 {\alpha}}{8 }\left[ \delta_{ij} \frac{\|R^{lm}\|^2 + 2\epsilon^2}{(\|R^{lm}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{R_i^{lm}R_j^{lm}}{(\|R^{lm}\|^2 + \epsilon ^2)^\frac{3}{2}} \right]
+\end{align}
+The correlation of the noise $\xi$ (on the position of the particles) is shown in equation \eqref{eq:noisecorrelation}
+
+\begin{align}
+    \langle \tilde{\xi_i} \tilde{\xi_j}\rangle &= \frac{2 kT \Delta t}{8 \pi \mu } \left[ \delta_{ij} \frac{\|R^{lm}\|^2 + 2\epsilon^2}{(\|R^{lm}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{R_i^{lm}R_j^{lm}}{(\|R^{lm}\|^2 + \epsilon ^2)^\frac{3}{2}} \right] \label{eq:noisecorrelation} \\
+    %Making the equation dimesionless
+    &= \frac{2 kT \lambda_m {\Delta t}}{8 \pi \mu R_{max}} \left[ \delta_{ij} \frac{\|{R^{lm}}\|^2 + 2\epsilon^2}{(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{{R_i^{lm}} {R_j^{lm}}} {(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} \right] \\
+    %Changing lambda to its factors and introducing chi
+    &=  \frac{2 kT \cdot 3 \pi \mu \alpha {\Delta t}}{H 8 \pi \mu R_{max}} \frac{\chi H R^2_{max}}{2kT} \left[ \delta_{ij} \frac{\|{R^{lm}}\|^2 + 2\epsilon^2}{(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{{R_i^{lm}} {R_j^{lm}}} {(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} \right] \\
+    %cancelling terms 
+    &=  \frac{   R^2_{max} \chi   {\Delta t} 3{\alpha}}{ 8 } \left[ \delta_{ij} \frac{\|{R^{lm}}\|^2 + 2\epsilon^2}{(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{{R_i^{lm}} {R_j^{lm}}} {(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} \right] \\
+    %Writing the correlation properties of the dimensionless xi vector
+    \langle {\xi_i} {\xi_j}\rangle &= \frac{ \chi   {\Delta t} 3{\alpha}}{ 8 } \left[ \delta_{ij} \frac{\|{R^{lm}}\|^2 + 2\epsilon^2}{(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} + \frac{{R_i^{lm}} {R_j^{lm}}} {(\|{R^{lm}}\|^2 + \epsilon ^2)^\frac{3}{2}} \right] \\
+    %Writing it succinctly
+    \langle {\xi_i} {\xi_j}\rangle &= \chi   {\Delta t} {D_{ij}^{lm}}
+\end{align}
+To calculate the correlated noise vector on each particle, a weighted sum of normal random numbers is used. This is done by constructing a matrix $\sigma_{ij}$ and multiplying a randomly generated, normally distributed vector with it ($X_i$). The indices ij now span all the components of the 4 particles (thus $\sigma_{ij}$ is a 12 by 12 matrix).
+\begin{equation}
+    \xi_{i}     = \sum_{j =1}^{i} \sigma_{ij} X_{j}
+\end{equation}
+Where the $\sigma $ matrix is defined in equation \eqref{eq:sigma}. The matrix is calculated in another method of the program, after the Oseen tensor has been found for that time step. 
+\begin{align}\label{eq:sigma}
+    \sigma_{ij} &= \frac{\left( {D_{ij}} - \sum_{k = 1}^{j-1}\sigma_{ik}\sigma{kj} \right)}{\sigma_{jj}} \\
+    \sigma_{ii} &= \sqrt{ \left( {D_{ij}} - \sum_{k = 1}^{i-1}\sigma_{ik}^{2} \right)}
+\end{align}
+\end{document}
