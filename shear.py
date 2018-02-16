@@ -54,10 +54,10 @@ def walk(k,max_file,chi_element):
                 oseen_tensor, sep_lst = oseen(particles_interm)
                 noise_vector = noise_producer(oseen_tensor, chi_element)
 
-                particles[0] = particles_interm[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles,oseen_tensor,k) + noise_vector[Part1]
-                particles[1] = particles_interm[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k) + noise_vector[Part2]
-                particles[2] = particles_interm[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles,oseen_tensor,k) + noise_vector[Part3]
-                particles[3] = particles_interm[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k) + noise_vector[Part4]
+                particles[0] = particles[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles_interm,oseen_tensor,k) + noise_vector[Part1]
+                particles[1] = particles[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles_interm,oseen_tensor,k) + noise_vector[Part2]
+                particles[2] = particles[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part3]
+                particles[3] = particles[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part4]
 
 
                 # polyvec1 = particles[1] - particles[0]
