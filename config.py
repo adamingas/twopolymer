@@ -2,7 +2,7 @@ import numpy as np
 
 noise = "yes" #yes or no
 steps = 100000
-runs = 1
+runs = 2
 constant = np.linspace(1,10,1).tolist()
 time_step = 0.01
 #Particles a b c d with initial positions:
@@ -20,7 +20,7 @@ dxinitial = 0.
 dzinitial = 1.
 initial_positions = [axinitial,ayinitial,azinitial,bxinitial,byinitial,bzinitial,cxinitial,cyinitial,czinitial,dxinitial,dyinitial,dzinitial]
 ar_ratio =  0.1 #Rmax over radius of sphere
-chi = [10**(-4),10**(-3),10**(-2)] #Thermal energy over max potential energy of FENE spring
+chi = [10**(-3)] #Thermal energy over max potential energy of FENE spring
 if ar_ratio == 0:
 	hydro = "no"
 else:

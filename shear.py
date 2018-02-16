@@ -186,7 +186,7 @@ def analyse():
                         t = float(token[0])
                         particles = []
                         for i in range(4):
-                            particles.append(np.array([float(token[3*i +j]) for j in range(3)]))
+                            particles.append(np.array([float(token[3*i +j +1]) for j in range(3)]))
                         # Polymer separation vector and centre of mass vecotr
                         polyvec1 = particles[1] - particles[0]
                         polymagn1 = np.linalg.norm(polyvec1)
