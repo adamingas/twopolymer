@@ -7,6 +7,7 @@ import linecache
 import config
 import argparse
 import numpy as np
+import timeit
 
 """
 Version 3.0.0Alpha
@@ -151,7 +152,7 @@ def analyse():
             # results is the file where all the results will be printed out
             results = open("RES_{}_{}_{}_{}_{}_{}.out".format(v, x, steps, time_step, ar_ratio, noise), "w")
 
-            results.write("# Time-step, Mean Separation1, Mean Squared Separation1, Mean Separation2, Mean Squared Separation2, Mean COM separation \n")
+            results.write("# Time-step, Mean Separation1, Mean Squared Separation1, Mean Separation2, Mean Squared Separation2, Mean COM separation, Angle 1, Angle 2 \n")
 
             #The following way of reading files is because of a limitation
             #in the number of files a computer can have open at the same time
@@ -180,6 +181,8 @@ def analyse():
                     sepsq2 = 0
                     sep2 = 0
                     comsep = 0
+                    totangle1 = 0
+                    totangle2 = 0
 
                     for file in filedata.values():
                         token = str.split(file.readline())
@@ -195,8 +198,8 @@ def analyse():
                         comvec = (particles[3] + particles[2] - particles[1] - particles[0])/2
                         commag = np.linalg.norm(comvec)
                         # Angle with shear axis
-                        # angle1 = np.degrees(np.arccos(np.clip(np.dot(polyvec1,np.array([1,0,0]))/polymagn1,-1.0,1.0)))
-                        # angle2 = np.degrees(np.arccos(np.clip(np.dot(polyvec2, np.array([1, 0, 0])) / polymagn2, -1.0, 1.0)))
+                        angle1 = np.degrees(np.arccos(np.clip(np.dot(polyvec1,np.array([1,0,0]))/polymagn1,-1.0,1.0)))
+                        angle2 = np.degrees(np.arccos(np.clip(np.dot(polyvec2, np.array([1, 0, 0])) / polymagn2, -1.0, 1.0)))
 
 
                         sepsq1 += polymagn1 ** 2
@@ -204,7 +207,9 @@ def analyse():
                         sepsq2 += polymagn2 ** 2
                         sep2 += polymagn2
                         comsep += commag
-                    averages_list[k].write("{} {} {} {} {} {}\n".format(t,sep1/runs, sepsq1 / runs,sep2/runs, sepsq2 / runs,comsep/runs))
+                        totangle1 += angle1
+                        totangle2 += angle2
+                    averages_list[k].write("{} {} {} {} {} {} {} {}\n".format(t,sep1/runs, sepsq1 / runs,sep2/runs, sepsq2 / runs,comsep/runs,totangle1/runs,totangle2/runs))
 
                     update_progress(lines / (steps))
                 for fruns in filedata.values():
@@ -220,8 +225,8 @@ def analyse():
             # slow down the computation by a bit.
             # ~~~~~~~~~ NOTE: If computation time is an issue then modify this ~~~~~~~~~~~~~~~~~~~~~~~~~~
             print "~~~~~~~ Merging ~~~~~~~~~"
-            maxr = 0
-            tmax = 0
+            #maxr = 0
+            #tmax = 0
             for j in xrange(steps + 1):
 
                 mean_sep1 =0
@@ -229,6 +234,8 @@ def analyse():
                 mean_sepsq1 = 0
                 mean_sepsq2 = 0
                 mean_comsep = 0
+                mean_angle1 = 0
+                mean_angle2 = 0
 
                 for k in range(thousands_of_runs):
                     # Reading the averaged parameters and averages the again for every thousand runs
@@ -241,7 +248,10 @@ def analyse():
                     mean_sepsq1 += float(token[2])
                     mean_sepsq2 += float(token[4])
                     mean_comsep += float(token[5])
-                results.write("{} {} {} {} {} {}\n".format(t,mean_sep1,mean_sepsq1,mean_sep2,mean_sepsq2,mean_comsep))
+                    mean_angle1 += float(token[6])
+                    mean_angle2 += float(token[7])
+
+                results.write("{} {} {} {} {} {} {} {}\n".format(t,mean_sep1,mean_sepsq1,mean_sep2,mean_sepsq2,mean_comsep, mean_angle1,mean_angle2))
 
                 # if maxr <= mean_mss:
                 #     maxr = mean_mss
@@ -282,31 +292,44 @@ def maximum():
     max_file.close()
     os.chdir("..")
 def average_sepparation():
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
-    chi[0], chi[-1], hydro, steps,time_step, ar_ratio, noise))
+    print ("Average Sepparation calculation")
+    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
+        chi[0], chi[-1], steps, time_step, ar_ratio,noise))
+
 
     for j,chi_element in enumerate(chi):
         avsep_file = open(("Av.Sep_hydro:{}_chi:{}_Wi:{}-{}_numWi:{}").format(hydro, chi_element,
                                                                 constant[0],constant[-1],len(constant)),"w")
         for i,wi in enumerate(constant):
-            wisep_array = np.loadtxt("Run{}_Wi{}_chi{}".format(0, wi,chi_element))
-            avsep_file.write("{} {}\n".format(wi,np.mean(wisep_array[500:,-1])))
+            wisep_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}.out".format(wi, chi_element, steps, time_step, ar_ratio, noise))
+
+
+            average1 = np.mean(wisep_array[500:,1])
+            average2 = np.mean(wisep_array[500:, 3])
+            mean = (average1 + average2)/2
+            avsep_file.write("{} {}\n".format(wi,mean))
             print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
         print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
+    os.chdir("..")
 
 def angle():
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_hydro:{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
-    chi[0], chi[-1], hydro, steps,time_step, ar_ratio, noise))
+    print ("Angle Calculation")
+    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
+        chi[0], chi[-1], steps, time_step, ar_ratio,noise))
+
 
     for j,chi_element in enumerate(chi):
         avsep_file = open(("Angle_hydro:{}_chi:{}_Wi:{}-{}_numWi:{}").format(hydro, chi_element,
                                                                 constant[0],constant[-1],len(constant)),"w")
         for i,wi in enumerate(constant):
-            file_array = np.loadtxt("Run{}_Wi{}_chi{}".format(0, wi,chi_element))
-            angle_array = np.arccos(np.absolute(file_array[:,1])/file_array[:,-1])
-            avsep_file.write("{} {}\n".format(wi,np.mean(angle_array[500:])))
+            file_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}.out".format(wi, chi_element, steps, time_step, ar_ratio, noise))
+
+            angle_array1 = np.mean(file_array[500:,6])
+            angle_array2 = np.mean(file_array[500:,7])
+            avsep_file.write("{} {}\n".format(wi,(angle_array1+angle_array2)/2))
             print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
         print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
+    os.chdir("..")
 
 def simulate():
     """
@@ -411,7 +434,7 @@ if __name__ == "__main__":
     if args.walk:
         simulate()
     if args.analyse:
-        analyse()
+        print timeit.timeit(analyse, number=1)
     if args.average:
         average_sepparation()
     if args.angle:
