@@ -47,18 +47,18 @@ def walk(k,max_file,chi_element):
                 # Chi_element is divided by two because the time step is half in the intermediate step
                 noise_vector = noise_producer(oseen_tensor, chi_element/2)
                 # Updating new position of particles
-                particles_interm[0] = particles[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part1]
-                particles_interm[1] = particles[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part2]
-                particles_interm[2] = particles[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part3]
-                particles_interm[3] = particles[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part4]
+                particles_interm[0] = particles[0] + time_step*function(0,1,2,3,sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part1]
+                particles_interm[1] = particles[1] + time_step*function(1,0,2,3,-sep_lst[0],sep_lst[5],particles,oseen_tensor,k)/2 + noise_vector[Part2]
+                particles_interm[2] = particles[2] + time_step*function(2,3,0,1,sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part3]
+                particles_interm[3] = particles[3] + time_step*function(3,2,0,1,-sep_lst[5],sep_lst[0],particles,oseen_tensor,k)/2 + noise_vector[Part4]
 
                 oseen_tensor, sep_lst = oseen(particles_interm)
                 noise_vector = noise_producer(oseen_tensor, chi_element)
 
-                particles[0] = particles[0] + time_step*function(Part1,Part2,Part3,Part4,sep_lst[0],sep_lst[5],particles_interm,oseen_tensor,k) + noise_vector[Part1]
-                particles[1] = particles[1] + time_step*function(Part2,Part1,Part3,Part4,-sep_lst[0],sep_lst[5],particles_interm,oseen_tensor,k) + noise_vector[Part2]
-                particles[2] = particles[2] + time_step*function(Part3,Part4,Part1,Part2,sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part3]
-                particles[3] = particles[3] + time_step*function(Part4,Part3,Part1,Part2,-sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part4]
+                particles[0] = particles[0] + time_step*function(0,1,2,3,sep_lst[0],sep_lst[5],particles_interm,oseen_tensor,k) + noise_vector[Part1]
+                particles[1] = particles[1] + time_step*function(1,0,2,3,-sep_lst[0],sep_lst[5],particles_interm,oseen_tensor,k) + noise_vector[Part2]
+                particles[2] = particles[2] + time_step*function(2,3,0,1,sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part3]
+                particles[3] = particles[3] + time_step*function(3,2,0,1,-sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part4]
 
 
                 # polyvec1 = particles[1] - particles[0]
@@ -70,14 +70,14 @@ def walk(k,max_file,chi_element):
             update_progress(j / (runs))
             out.close()
 
-def function(refparticle,refparticlepair,particle3,particle4,sepvec,sepvec2, particles, oseen_tensor,k):
+def function(ref, refpair, p3, p4, sepvec, sepvec2, particles, oseen_tensor, k):
 
     """
 
-    :param refparticle: The particle on which the force acts on
-    :param refparticlepair: The particle on the same chain of the reference particle
-    :param particle3: The 3rd particle
-    :param particle4: The 4th particle
+    :param ref: The particle on which the force acts on
+    :param refpair: The particle on the same chain of the reference particle
+    :param p3: The 3rd particle
+    :param p4: The 4th particle
 
     :param sepvec: Separation vector from reference particle to its pair on the same chain
     :param sepvec2: Separation vector between the other two particles from smallest particle number
@@ -85,10 +85,13 @@ def function(refparticle,refparticlepair,particle3,particle4,sepvec,sepvec2, par
     :param particles:
     :return: The velocity of the reference particle at the current time step
     """
-    vector = np.array([ k * particles[int(refparticle[0]/3)][1], 0, 0]) + (
-            (sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) +  (
-        -oseen_tensor[refparticlepair, refparticle].dot(sepvec) + oseen_tensor[particle3, refparticle].dot(sepvec2)
-        - oseen_tensor[particle4, refparticle].dot(sepvec2))
+    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) +  (
+        -oseen_tensor[refpair*3:(refpair+1)*3, ref*3:(ref+1)*3].dot(sepvec) + oseen_tensor[3*p3:3*(p3+1), ref*3:(ref+1)*3].dot(sepvec2)
+        - oseen_tensor[3*p4:3*(p4+1), ref*3:(ref+1)*3].dot(sepvec2))
+    vector = np.array([k * particles[int(ref)][1], 0, 0]) + hydro_forces
+
+
+
     return vector
 def oseen(particles):
     # Construct list of separations between particles
