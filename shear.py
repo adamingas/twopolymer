@@ -85,9 +85,13 @@ def function(ref, refpair, p3, p4, sepvec, sepvec2, particles, oseen_tensor, k):
     :param particles:
     :return: The velocity of the reference particle at the current time step
     """
-    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) +  (
-        -oseen_tensor[refpair*3:(refpair+1)*3, ref*3:(ref+1)*3].dot(sepvec) + oseen_tensor[3*p3:3*(p3+1), ref*3:(ref+1)*3].dot(sepvec2)
-        - oseen_tensor[3*p4:3*(p4+1), ref*3:(ref+1)*3].dot(sepvec2))
+    magvec = np.linalg.norm(sepvec)**2
+    magvec2 = np.linalg.norm(sepvec2)**2
+
+    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) + (
+        -oseen_tensor[refpair*3:(refpair+1)*3, ref*3:(ref+1)*3].dot(sepvec)/(1-magvec)) + (oseen_tensor[3*p3:3*(p3+1), ref*3:(ref+1)*3].dot(sepvec2)
+        - oseen_tensor[3*p4:3*(p4+1), ref*3:(ref+1)*3].dot(sepvec2))/(1-magvec2)
+
     vector = np.array([k * particles[int(ref)][1], 0, 0]) + hydro_forces
 
 
