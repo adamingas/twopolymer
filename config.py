@@ -1,15 +1,15 @@
 import numpy as np
 
 noise = "yes" #yes or no
-steps = 10000
-runs = 250
-constant = np.linspace(0,10,21).tolist()
-time_step = 0.1
+steps = 10
+runs = 1
+constant = [10] #np.linspace(0,10,21).tolist()
+time_step = 0.01
 #Particles a b c d with initial positions:
-ayinitial = -0.05
+ayinitial = 0
 axinitial = 0.
 azinitial = 0.
-byinitial = 0.05
+byinitial = 0.1
 bxinitial = 0.
 bzinitial = 0.
 cyinitial = 0.05
