@@ -8,13 +8,14 @@ import config
 import argparse
 import numpy as np
 import timeit
+import matplotlib.pyplot as plt
 
 """
 Version 3.0.0Alpha
 Changed to two polymer chains. Simulate run for a number of constants and find maximum separation squared.
 """
 
-def walk(k,max_file,chi_element):
+def walk(k,max_file,chi_element,l):
     """
     Performs the random walk.
     There are 4 possibilities of a walk, which are combinations of the binary states of hydrodynamic
@@ -25,12 +26,13 @@ def walk(k,max_file,chi_element):
 
     if str.upper(noise) in ("YES","Y","NOISE"):
         for j in xrange(runs):
-            out = open("Run{}_Wi{}_chi{}".format(j, k,chi_element), "w")
-            particles = [np.array(initial_positions[0:3]),np.array(initial_positions[3:6]),
-                         np.array(initial_positions[6:9]),np.array(initial_positions[9:12])]
+            out = open("Run{}_Wi{}_chi{}_l{}".format(j, k,chi_element,l), "w")
+
+            p3,p4 = config.randomiser(l)
+            particles = [config.p1,config.p2,p3,p4]
             particles_interm = [None]*4
-            polyvec1 = particles[1] - particles[0]
-            polyvec2 = particles[3] - particles[2]
+            #polyvec1 = particles[1] - particles[0]
+            #polyvec2 = particles[3] - particles[2]
             # out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (1), polyvec1[0], polyvec1[1], polyvec1[2],
             # np.linalg.norm(polyvec1),polyvec2[0], polyvec2[1], polyvec2[2],np.linalg.norm(polyvec2)))
             out.write("{} {} {} {} {}\n".format(0, str(particles[0]).strip("array([,])"),
@@ -60,7 +62,11 @@ def walk(k,max_file,chi_element):
                 particles[2] = particles[2] + time_step*function(2,3,0,1,sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part3]
                 particles[3] = particles[3] + time_step*function(3,2,0,1,-sep_lst[5],sep_lst[0],particles_interm,oseen_tensor,k) + noise_vector[Part4]
 
-
+                com1 = (particles[0] + particles[1]) /2
+                com2 = (particles[3] + particles[2]) / 2
+                comsep = np.linalg.norm(com2 - com1)
+                if comsep >= l:
+                    particles[2],particles[3] = randomiser(l,com1,particles[2],particles[3])
                 # polyvec1 = particles[1] - particles[0]
                 # polyvec2 = particles[3] - particles[2]
                 # out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (i + 1),polyvec1[0],polyvec1[1],polyvec1[2],np.linalg.norm(polyvec1),
@@ -137,6 +143,16 @@ def noise_producer(matrix,chi_element):
 
 
     return sigma_m.dot(np.random.normal(0,math.sqrt(chi_element* time_step),12))
+def randomiser(l,com1,p3,p4):
+    radius = np.random.uniform() * l
+    costh = np.random.uniform(-1, 1)
+    fi = np.random.uniform() * 2 * math.pi
+    sinth = np.sqrt(1 - costh ** 2)
+
+    extvec2 = p4 -p3
+    particle3 = com1 + np.array([radius * math.cos(fi) * sinth, radius * math.sin(fi) * sinth, radius * costh]) - extvec2/2
+    particle4 = p3+ extvec2
+    return particle3,particle4
 def analyse():
     """
     This function goes to the folder of the previously run simulation, and averages over
@@ -146,132 +162,133 @@ def analyse():
     """
 
 
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
         chi[0],chi[-1],steps,time_step,ar_ratio,noise))
+
     # max_file = open("AMax_File_con"
     #                 ":{}-{}_numc:{}_h{}_s{}_ts{}_ra{}_n{}".format(
     #     constant[0], constant[-1], len(constant), hydro, steps, time_step, ar_ratio, noise), "w")
     # max_file.write("#Constant, Maxseparation over initial separation, time of max separation\n")
 
-    for x in chi:
-        for v in constant:
-            #Rfile = open(os.getcwd() + "/Results.out", "a")
-            # results is the file where all the results will be printed out
-            results = open("RES_{}_{}_{}_{}_{}_{}.out".format(v, x, steps, time_step, ar_ratio, noise), "w")
+    for l in ldensity:
+        for x in chi:
+            for v in constant:
+                #Rfile = open(os.getcwd() + "/Results.out", "a")
+                # results is the file where all the results will be printed out
+                results = open("RES_{}_{}_{}_{}_{}_{}_{}.out".format(l,v, x, steps, time_step, ar_ratio, noise), "w")
 
-            results.write("# Time-step, Mean Separation1, Mean Squared Separation1, Mean Separation2, Mean Squared Separation2, Mean COM separation, Angle 1, Angle 2 \n")
+                results.write("# Time-step, Mean Separation1, Mean Squared Separation1, Mean Separation2, Mean Squared Separation2, Mean COM separation, Angle 1, Angle 2 \n")
 
-            #The following way of reading files is because of a limitation
-            #in the number of files a computer can have open at the same time
-            thousands_of_runs = int(math.ceil(runs / 1000))
-            averages_list = []
+                #The following way of reading files is because of a limitation
+                #in the number of files a computer can have open at the same time
+                thousands_of_runs = int(math.ceil(runs / 1000))
+                averages_list = []
 
-            # Reads every thousand runs of a simulation
-            for k in range(thousands_of_runs):
-                print ("i am in {}".format(k))
-                # Opens the first 1000 runs in a dictionary, then opens the next 1000 and so on.
-                filedata = {i: open("Run{}_Wi{}_chi{}".format(i,v,x), "r") for i in xrange(k * 1000, min(runs, (k + 1) * 1000))}
-                # Mean separation and Mean square separation lists that contain temporary files
-                # with the respective values for every thousand runs. They are deleted afterwards
-                # Averages_list contains temporary files which hold the average values of various parameters for every
-                # thousand runs of the simulation
-                averages_list.append(open("averages_{}th_thousand.tmp".format(k), "w"))
-
-
-                # Adding squared separation and separation together
-                # to average noise
-                for lines in xrange(steps + 1):
-                    # sepsq1 and 2 are the separations squared of the polymers. sep1 and 2 are the separations.
-                    # comsep is the separation between the centres of mass of the two polymers.
-                    sepsq1 = 0
-                    sep1 = 0
-                    sepsq2 = 0
-                    sep2 = 0
-                    comsep = 0
-                    totangle1 = 0
-                    totangle2 = 0
-
-                    for file in filedata.values():
-                        token = str.split(file.readline())
-                        t = float(token[0])
-                        particles = []
-                        for i in range(4):
-                            particles.append(np.array([float(token[3*i +j +1]) for j in range(3)]))
-                        # Polymer separation vector and centre of mass vecotr
-                        polyvec1 = particles[1] - particles[0]
-                        polymagn1 = np.linalg.norm(polyvec1)
-                        polyvec2 = particles[3] - particles[2]
-                        polymagn2 = np.linalg.norm(polyvec2)
-                        comvec = (particles[3] + particles[2] - particles[1] - particles[0])/2
-                        commag = np.linalg.norm(comvec)
-                        # Angle with shear axis
-                        angle1 = np.degrees(np.arccos(np.clip(np.dot(polyvec1,np.array([1,0,0]))/polymagn1,-1.0,1.0)))
-                        angle2 = np.degrees(np.arccos(np.clip(np.dot(polyvec2, np.array([1, 0, 0])) / polymagn2, -1.0, 1.0)))
-
-
-                        sepsq1 += polymagn1 ** 2
-                        sep1 += polymagn1
-                        sepsq2 += polymagn2 ** 2
-                        sep2 += polymagn2
-                        comsep += commag
-                        totangle1 += angle1
-                        totangle2 += angle2
-                    averages_list[k].write("{} {} {} {} {} {} {} {}\n".format(t,sep1/runs, sepsq1 / runs,sep2/runs, sepsq2 / runs,comsep/runs,totangle1/runs,totangle2/runs))
-
-                    update_progress(lines / (steps))
-                for fruns in filedata.values():
-                    fruns.close()
-                averages_list[k].close()
-
-                averages_list[k] = open("averages_{}th_thousand.tmp".format(k), "r")
-
-
-            # This loop goes through the temporary file in averages_list and finds the
-            # mean separation and separation squared of the two polymers, and the average separation between them
-            # if the number of runs was more than 1000. If its under 1000 runs then this loop will
-            # slow down the computation by a bit.
-            # ~~~~~~~~~ NOTE: If computation time is an issue then modify this ~~~~~~~~~~~~~~~~~~~~~~~~~~
-            print "~~~~~~~ Merging ~~~~~~~~~"
-            #maxr = 0
-            #tmax = 0
-            for j in xrange(steps + 1):
-
-                mean_sep1 =0
-                mean_sep2 = 0
-                mean_sepsq1 = 0
-                mean_sepsq2 = 0
-                mean_comsep = 0
-                mean_angle1 = 0
-                mean_angle2 = 0
-
+                # Reads every thousand runs of a simulation
                 for k in range(thousands_of_runs):
-                    # Reading the averaged parameters and averages the again for every thousand runs
-                    token = str.split(averages_list[k].readline())
-                    # mstoken = str.split(ms_list[k].readline())
-                    # msstoken = str.split(mss_list[k].readline())
-                    t = float(token[0])
-                    mean_sep1 += float(token[1])
-                    mean_sep2 += float(token[3])
-                    mean_sepsq1 += float(token[2])
-                    mean_sepsq2 += float(token[4])
-                    mean_comsep += float(token[5])
-                    mean_angle1 += float(token[6])
-                    mean_angle2 += float(token[7])
+                    # Opens the first 1000 runs in a dictionary, then opens the next 1000 and so on.
+                    filedata = {i: open("Run{}_Wi{}_chi{}_l{}".format(i,v,x,l), "r") for i in xrange(k * 1000, min(runs, (k + 1) * 1000))}
+                    # Mean separation and Mean square separation lists that contain temporary files
+                    # with the respective values for every thousand runs. They are deleted afterwards
+                    # Averages_list contains temporary files which hold the average values of various parameters for every
+                    # thousand runs of the simulation
+                    averages_list.append(open("averages_{}th_thousand.tmp".format(k), "w"))
 
-                results.write("{} {} {} {} {} {} {} {}\n".format(t,mean_sep1,mean_sepsq1,mean_sep2,mean_sepsq2,mean_comsep, mean_angle1,mean_angle2))
 
-                # if maxr <= mean_mss:
-                #     maxr = mean_mss
-                #     tmax = t
-            # Max separation squared over initial separation squared is stored in a max file for
-            # every constant
-            # The loop deletes the unnecessary temporary files
-            # init_separation = np.linalg.norm(initial_positions[3:6] - initial_positions[0:3])
-            # max_file.write("{} {} {}\n".format(v, maxr / (init_separation ** 2), tmax))
-            for k in range(thousands_of_runs):
-                os.remove(averages_list[k].name)
+                    # Adding squared separation and separation together
+                    # to average noise
+                    for lines in xrange(steps + 1):
+                        # sepsq1 and 2 are the separations squared of the polymers. sep1 and 2 are the separations.
+                        # comsep is the separation between the centres of mass of the two polymers.
+                        sepsq1 = 0
+                        sep1 = 0
+                        sepsq2 = 0
+                        sep2 = 0
+                        comsep = 0
+                        totangle1 = 0
+                        totangle2 = 0
 
-            results.close()
+                        for file in filedata.values():
+                            token = str.split(file.readline())
+                            t = float(token[0])
+                            particles = []
+                            for i in range(4):
+                                particles.append(np.array([float(token[3*i +j +1]) for j in range(3)]))
+                            # Polymer separation vector and centre of mass vecotr
+                            polyvec1 = particles[1] - particles[0]
+                            polymagn1 = np.linalg.norm(polyvec1)
+                            polyvec2 = particles[3] - particles[2]
+                            polymagn2 = np.linalg.norm(polyvec2)
+                            comvec = (particles[3] + particles[2] - particles[1] - particles[0])/2
+                            commag = np.linalg.norm(comvec)
+                            # Angle with shear axis
+                            angle1 = np.degrees(np.arccos(np.clip(np.dot(polyvec1,np.array([1,0,0]))/polymagn1,-1.0,1.0)))
+                            angle2 = np.degrees(np.arccos(np.clip(np.dot(polyvec2, np.array([1, 0, 0])) / polymagn2, -1.0, 1.0)))
+
+
+                            sepsq1 += polymagn1 ** 2
+                            sep1 += polymagn1
+                            sepsq2 += polymagn2 ** 2
+                            sep2 += polymagn2
+                            comsep += commag
+                            totangle1 += angle1
+                            totangle2 += angle2
+                        averages_list[k].write("{} {} {} {} {} {} {} {}\n".format(t,sep1/runs, sepsq1 / runs,sep2/runs, sepsq2 / runs,comsep/runs,totangle1/runs,totangle2/runs))
+
+                        update_progress(lines / (steps))
+                    for fruns in filedata.values():
+                        fruns.close()
+                    averages_list[k].close()
+
+                    averages_list[k] = open("averages_{}th_thousand.tmp".format(k), "r")
+
+
+                # This loop goes through the temporary file in averages_list and finds the
+                # mean separation and separation squared of the two polymers, and the average separation between them
+                # if the number of runs was more than 1000. If its under 1000 runs then this loop will
+                # slow down the computation by a bit.
+                # ~~~~~~~~~ NOTE: If computation time is an issue then modify this ~~~~~~~~~~~~~~~~~~~~~~~~~~
+                print "~~~~~~~ Merging ~~~~~~~~~"
+                #maxr = 0
+                #tmax = 0
+                for j in xrange(steps + 1):
+
+                    mean_sep1 =0
+                    mean_sep2 = 0
+                    mean_sepsq1 = 0
+                    mean_sepsq2 = 0
+                    mean_comsep = 0
+                    mean_angle1 = 0
+                    mean_angle2 = 0
+
+                    for k in range(thousands_of_runs):
+                        # Reading the averaged parameters and averages the again for every thousand runs
+                        token = str.split(averages_list[k].readline())
+                        # mstoken = str.split(ms_list[k].readline())
+                        # msstoken = str.split(mss_list[k].readline())
+                        t = float(token[0])
+                        mean_sep1 += float(token[1])
+                        mean_sep2 += float(token[3])
+                        mean_sepsq1 += float(token[2])
+                        mean_sepsq2 += float(token[4])
+                        mean_comsep += float(token[5])
+                        mean_angle1 += float(token[6])
+                        mean_angle2 += float(token[7])
+
+                    results.write("{} {} {} {} {} {} {} {}\n".format(t,mean_sep1,mean_sepsq1,mean_sep2,mean_sepsq2,mean_comsep, mean_angle1,mean_angle2))
+
+                    # if maxr <= mean_mss:
+                    #     maxr = mean_mss
+                    #     tmax = t
+                # Max separation squared over initial separation squared is stored in a max file for
+                # every constant
+                # The loop deletes the unnecessary temporary files
+                # init_separation = np.linalg.norm(initial_positions[3:6] - initial_positions[0:3])
+                # max_file.write("{} {} {}\n".format(v, maxr / (init_separation ** 2), tmax))
+                for k in range(thousands_of_runs):
+                    os.remove(averages_list[k].name)
+
+                results.close()
     os.chdir("..")
     print os.getcwd()
 def maximum():
@@ -280,8 +297,9 @@ def maximum():
     between particles of the same polymer
     :return:
     """
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
         chi[0],chi[-1],steps,time_step,ar_ratio,noise))
+
     for j,chi_element in enumerate(chi):
         max_file = open("MAX_chi:{}_Wi:{}-{}_numWi:{}".format( chi_element,constant[0], constant[-1], len(constant)),"w")
         max_file.write("Weisenberg, Max mean squared separation 1, Max mean squared separation 2, Max COM separation \n")
@@ -300,43 +318,70 @@ def maximum():
     os.chdir("..")
 def average_sepparation():
     print ("Average Sepparation calculation")
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
-        chi[0], chi[-1], steps, time_step, ar_ratio,noise))
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
 
 
-    for j,chi_element in enumerate(chi):
-        avsep_file = open(("Av.Sep_hydro:{}_chi:{}_Wi:{}-{}_numWi:{}").format(hydro, chi_element,
-                                                                constant[0],constant[-1],len(constant)),"w")
-        for i,wi in enumerate(constant):
-            wisep_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}.out".format(wi, chi_element, steps, time_step, ar_ratio, noise))
+    for m,l in enumerate(ldensity):
+        for j,chi_element in enumerate(chi):
+            avsep_file = open(("Av.Sep_hydro:{}_l:{}_chi:{}_Wi:{}-{}_numWi:{}").format(hydro,l, chi_element,
+                                                                    constant[0],constant[-1],len(constant)),"w")
+            for i,wi in enumerate(constant):
+                wisep_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}_{}.out".format(l,wi, chi_element, steps, time_step, ar_ratio, noise))
 
 
-            average1 = np.mean(wisep_array[500:,1])
-            average2 = np.mean(wisep_array[500:, 3])
-            mean = (average1 + average2)/2
-            avsep_file.write("{} {}\n".format(wi,mean))
-            print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
-        print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
+                average1 = np.mean(wisep_array[500:,1])
+                #average2 = np.mean(wisep_array[500:, 3])
+                mean = average1
+                avsep_file.write("{} {}\n".format(wi,mean))
+                print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
+            print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
+        print("l number {} done, {} left".format(l, len(ldensity) - m - 1))
+
     os.chdir("..")
 
 def angle():
     print ("Angle Calculation")
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0], constant[-1],
-        chi[0], chi[-1], steps, time_step, ar_ratio,noise))
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
 
+    for m,l in enumerate(ldensity):
+        for j,chi_element in enumerate(chi):
+            avsep_file = open(("Angle_hydro:{}_l:{}_chi:{}_Wi:{}-{}_numWi:{}").format(hydro,l, chi_element,
+                                                                    constant[0],constant[-1],len(constant)),"w")
+            for i,wi in enumerate(constant):
+                file_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}_{}.out".format(l,wi, chi_element, steps, time_step, ar_ratio, noise))
+
+                angle_array1 = np.mean(file_array[500:,6])
+                angle_array2 = np.mean(file_array[500:,7])
+                avsep_file.write("{} {}\n".format(wi,(angle_array1+angle_array2)/2))
+                print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
+            print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
+        print("l number {} done, {} left".format(l, len(ldensity) - m - 1))
+
+    os.chdir("..")
+def plot():
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
 
     for j,chi_element in enumerate(chi):
-        avsep_file = open(("Angle_hydro:{}_chi:{}_Wi:{}-{}_numWi:{}").format(hydro, chi_element,
-                                                                constant[0],constant[-1],len(constant)),"w")
-        for i,wi in enumerate(constant):
-            file_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}.out".format(wi, chi_element, steps, time_step, ar_ratio, noise))
 
-            angle_array1 = np.mean(file_array[500:,6])
-            angle_array2 = np.mean(file_array[500:,7])
-            avsep_file.write("{} {}\n".format(wi,(angle_array1+angle_array2)/2))
-            print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
-        print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
-    os.chdir("..")
+        plots = []
+        color = iter(plt.cm.rainbow(np.linspace(0, 1,len(ldensity))))
+
+        for m,l in enumerate(ldensity):
+
+
+            avsep = np.loadtxt("Av.Sep_hydro:{}_l:{}_chi:{}_Wi:{}-{}_numWi:{}".format(hydro,l, chi_element,
+                                                                    constant[0],constant[-1],len(constant)))
+
+            c = next(color)
+            plt.plot(avsep[:,0],avsep[:,1], c=c, label = "L: {}".format(l))
+        plt.legend()
+        plt.ylabel("Average Extension")
+        plt.xlabel("Weisenberg")
+        plt.title("Average Extension vs Weisenberg number for l {}-{} hydro {}".format(ldensity[0],ldensity[-1],hydro))
+        plt.savefig("Av.Ext:{}_steps:{}_runs:{}_l:{}-{}.png".format(time_step,steps,runs,ldensity[0],ldensity[-1]))
 
 def simulate():
     """
@@ -347,13 +392,14 @@ def simulate():
     #This code simulates the walk of the polymer and stores the max separation in a file
 
     try:
-        os.mkdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+        os.mkdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
         chi[0],chi[-1],steps,time_step,ar_ratio,noise))
     except OSError as e:
         if e.errno != 17:
             raise
-    os.chdir("Shear_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(constant[0],constant[-1],
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
         chi[0],chi[-1],steps,time_step,ar_ratio,noise))
+
     if args.max:
         max_file = open("Max_File_con"
                         ":{}-{}_numc:{}_h{}_s{}_ts{}_ra{}_n{}".format(
@@ -361,12 +407,14 @@ def simulate():
         max_file.write("#Constant, Maxseparation over initial separation, time of max separation\n")
     else:
         max_file = None
-    for o,k in enumerate(chi):
-        for n,j in enumerate(constant):
+    for m,l in enumerate(ldensity):
+        for o,k in enumerate(chi):
+            for n,j in enumerate(constant):
 
-            walk(j,max_file,k)
-            print("wi number {} done, {} left".format(j,len(constant)-n -1))
-        print("chi number {} done, {} left".format(k, len(chi) -o-1))
+                walk(j,max_file,k,l)
+                print("wi number {} done, {} left".format(j,len(constant)-n -1))
+            print("chi number {} done, {} left".format(k, len(chi) -o-1))
+        print("l number {} done, {} left".format(l, len(ldensity) -m-1))
     os.chdir("..")
 
 def update_progress(progress):
@@ -404,12 +452,12 @@ if __name__ == "__main__":
     runs = int(config.runs)
     constant = config.constant #Weissenberg numbers in a numpy array
     time_step = float(config.time_step)
-    initial_positions = config.initial_positions
     # init_separation = math.sqrt(xinitial**2 + yinitial**2 + zinitial**2)
     hydro = str(config.hydro)
     ar_ratio = float(config.ar_ratio)
     noise = str(config.noise)
     chi = config.chi
+    ldensity = config.ldensity
     epsilon_squared = 4*ar_ratio*ar_ratio
     # Lists that signify particle position in the Oseen tensor to make code more readable
     Part1 = range(0,3)
@@ -436,6 +484,8 @@ if __name__ == "__main__":
 
     parser.add_argument("-an", "--angle", help="Averages angle between separation vector and x-axis for each weisenberg number", action="store_true")
 
+    parser.add_argument("-p", "--plot", help="Plot configurations", action="store_true")
+
     args = parser.parse_args()
     # print args.echo
     if args.walk:
@@ -448,3 +498,5 @@ if __name__ == "__main__":
         angle()
     if args.max:
         maximum()
+    if args.plot:
+        plot()
