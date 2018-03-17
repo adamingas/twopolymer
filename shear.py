@@ -69,13 +69,9 @@ def walk(k,max_file,chi_element,l):
                 com2 = (particles[3] + particles[2]) / 2
                 comsep = np.linalg.norm(com2 - com1)
                 if comsep >= l:
-                    print "{} {}".format(i*time_step,comsep)
 
                     particles[2],particles[3] = randomiser(l,com1,particles[2],particles[3])
-                    com1 = (particles[0] + particles[1]) / 2
-                    com2 = (particles[3] + particles[2]) / 2
-                    comsep = np.linalg.norm(com2 - com1)
-                    print "{} {}".format(i*time_step,comsep)
+
                 # polyvec1 = particles[1] - particles[0]
                 # polyvec2 = particles[3] - particles[2]
                 # out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (i + 1),polyvec1[0],polyvec1[1],polyvec1[2],np.linalg.norm(polyvec1),
