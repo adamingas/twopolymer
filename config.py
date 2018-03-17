@@ -3,9 +3,9 @@ import math
 
 noise = "yes" #yes or no
 steps = 1000
-runs = 100
-constant = [1,5,10] #np.linspace(0,10,21).tolist()
-ldensity = [100]
+runs = 1
+constant = [6] #np.linspace(0,10,21).tolist()
+ldensity = [1]
 time_step = 0.1
 #Particles a b c d with initial positions:
 

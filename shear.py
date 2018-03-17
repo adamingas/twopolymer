@@ -11,7 +11,10 @@ import timeit
 import matplotlib.pyplot as plt
 
 """
-Version 3.0.0Alpha
+Version 4.0
+The position of the second polymer is randomised around a sphere of radius l of the first one. 
+This happens for every run. When the polymer passes outside this sphere, its position is randomised again.
+Version 3.0
 Changed to two polymer chains. Simulate run for a number of constants and find maximum separation squared.
 """
 
@@ -66,7 +69,13 @@ def walk(k,max_file,chi_element,l):
                 com2 = (particles[3] + particles[2]) / 2
                 comsep = np.linalg.norm(com2 - com1)
                 if comsep >= l:
+                    print "{} {}".format(i*time_step,comsep)
+
                     particles[2],particles[3] = randomiser(l,com1,particles[2],particles[3])
+                    com1 = (particles[0] + particles[1]) / 2
+                    com2 = (particles[3] + particles[2]) / 2
+                    comsep = np.linalg.norm(com2 - com1)
+                    print "{} {}".format(i*time_step,comsep)
                 # polyvec1 = particles[1] - particles[0]
                 # polyvec2 = particles[3] - particles[2]
                 # out.write("{} {} {} {} {} {} {} {} {}\n".format(time_step * (i + 1),polyvec1[0],polyvec1[1],polyvec1[2],np.linalg.norm(polyvec1),
@@ -150,8 +159,8 @@ def randomiser(l,com1,p3,p4):
     sinth = np.sqrt(1 - costh ** 2)
 
     extvec2 = p4 -p3
-    particle3 = com1 + np.array([radius * math.cos(fi) * sinth, radius * math.sin(fi) * sinth, radius * costh]) - extvec2/2
-    particle4 = p3+ extvec2
+    particle3 = com1 + np.array([radius * math.cos(fi) * sinth, radius * math.sin(fi) * sinth, radius * costh]) -extvec2/2
+    particle4 = particle3+ extvec2
     return particle3,particle4
 def analyse():
     """
