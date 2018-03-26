@@ -513,6 +513,50 @@ def histogram():
 
             plt.close(fig2)
     os.chdir("..")
+def fileshistogram(data):
+    extdata = data[0]
+    angdata = data[1]
+    ldata = data[2]
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(1, 1, 1)
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(d_constant))))
+    for i,l in enumerate(ldata):
+
+        comb_file = np.loadtxt(extdata[i])
+        values, bins = np.histogram(comb_file, density=True, bins=config.bins)
+        centre = (bins[:-1] + bins[1:]) / 2
+
+
+        c = next(color)
+        ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = l)
+        ax.legend()
+        comb_angle = np.loadtxt(angdata[i])
+        angles , abins = np.histogram(comb_angle,density=True,bins = 180)
+        acentre = (abins[:-1] + abins[1:]) / 2
+
+
+        ax2.bar(acentre, angles,color =c, width=(acentre[1] - acentre[0]),alpha = 0.5, label = l)
+        ax2.legend()
+    ax.set_title("Normalised Distribution of Extension for l{}".format(ldata))
+    ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
+    ax.set_ylabel("Normalised Frequency")
+    fig.savefig("Dist.ext_l{}_bins{}.png".format(ldata, len(bins)))
+
+    plt.close(fig)
+
+    ax2.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
+    ax2.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
+    ax2.set_ylabel("Normalised Frequency")
+    fig2.savefig(
+        "Dist.ang_l{}.png".format(ldata))
+
+    plt.close(fig2)
+
+
 
 if __name__ == "__main__":
     """
@@ -568,8 +612,13 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--distribution", help="Finds the distribution of angles and extension", action="store_true")
 
     parser.add_argument("-hi", "--histogram", help="Plots histogram of angle and extension", action="store_true")
+
+    parser.add_argument("-f",'--files', nargs='+',help = "Takes file names as input. This file names are used to draw histograms")
+
+    parser.add_argument("-app",'--append',nargs = "+", action='append')
     args = parser.parse_args()
-    # print args.echo
+
+    print args.append
 
 
     if args.walk:
@@ -588,3 +637,5 @@ if __name__ == "__main__":
         distribution()
     if args.histogram:
         histogram()
+    if args.append:
+        fileshistogram(args.append)
