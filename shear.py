@@ -521,6 +521,8 @@ def fileshistogram(data):
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
+    test = plt.figure()
+    lineax = test.add_subplot(1,1,1)
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(1, 1, 1)
     color = iter(plt.cm.rainbow(np.linspace(0, 1, len(ldata))))
@@ -533,6 +535,8 @@ def fileshistogram(data):
 
         c = next(color)
         ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = l)
+        lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8)
+        lineax.legend()
         ax.legend()
         comb_angle = np.loadtxt(angdata[i])
         angles , abins = np.histogram(comb_angle,density=True,bins = 180)
@@ -545,7 +549,7 @@ def fileshistogram(data):
     ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
     ax.set_ylabel("Normalised Frequency")
     fig.savefig("Dist.ext_l{}_bins{}.png".format(ldata, len(bins)))
-
+    test.savefig("test")
     plt.close(fig)
 
     ax2.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
