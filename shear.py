@@ -11,6 +11,8 @@ import timeit
 import matplotlib.pyplot as plt
 
 """
+Version 4.0.1
+Bug fix in randomiser.
 Version 4.0
 The position of the second polymer is randomised around a sphere of radius l of the first one. 
 This happens for every run. When the polymer passes outside this sphere, its position is randomised again.
@@ -227,8 +229,8 @@ def analyse():
                             comvec = (particles[3] + particles[2] - particles[1] - particles[0])/2
                             commag = np.linalg.norm(comvec)
                             # Angle with shear axis
-                            angle1 = np.degrees(np.arccos(np.clip(np.dot(polyvec1,np.array([1,0,0]))/polymagn1,-1.0,1.0)))
-                            angle2 = np.degrees(np.arccos(np.clip(np.dot(polyvec2, np.array([1, 0, 0])) / polymagn2, -1.0, 1.0)))
+                            angle1 = np.degrees(np.arccos(np.clip(abs(np.dot(polyvec1,np.array([1,0,0])))/polymagn1,0,1.0)))
+                            angle2 = np.degrees(np.arccos(np.clip(abs(np.dot(polyvec2, np.array([1, 0, 0]))) / polymagn2,0, 1.0)))
 
 
                             sepsq1 += polymagn1 ** 2
@@ -358,8 +360,8 @@ def angle():
                 file_array = np.loadtxt("RES_{}_{}_{}_{}_{}_{}_{}.out".format(l,wi, chi_element, steps, time_step, ar_ratio, noise))
 
                 angle_array1 = np.mean(file_array[500:,6])
-                angle_array2 = np.mean(file_array[500:,7])
-                avsep_file.write("{} {}\n".format(wi,(angle_array1+angle_array2)/2))
+                #angle_array2 = np.mean(file_array[500:,7])
+                avsep_file.write("{} {}\n".format(wi,angle_array1))
                 print("wi number {} done, {} left".format(wi, len(constant) - i - 1))
             print("chi number {} done, {} left".format(chi_element, len(chi) -j-1))
         print("l number {} done, {} left".format(l, len(ldensity) - m - 1))
@@ -387,7 +389,6 @@ def plot():
         plt.xlabel("Weisenberg")
         plt.title("Average Extension vs Weisenberg number for l {}-{} hydro {}".format(ldensity[0],ldensity[-1],hydro))
         plt.savefig("Av.Ext:{}_steps:{}_runs:{}_l:{}-{}.png".format(time_step,steps,runs,ldensity[0],ldensity[-1]))
-
 def simulate():
     """
     For version 1 the creation of folder is inside the for loop.
@@ -440,6 +441,69 @@ def update_progress(progress):
     text = "\rPercent: [{0}] {1}% {2}".format("#" * block + "-" * (barLength - block), progress * 100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
+def distribution():
+    os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
+        chi[0],chi[-1],steps,time_step,ar_ratio,noise))
+
+    for l in ldensity:
+        for x in chi:
+            for w in d_constant:
+
+                comb_file = open("Comb.ext_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps),"w")
+                comb_angle = open("Comb.ang_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps),"w")
+
+                for i in range(runs):
+                    file = np.loadtxt("Run{}_Wi{}_chi{}_l{}".format(i, w, x, l))
+                    polymag1 = np.sqrt(np.square(file[:,4] -file[:,1]) +np.square(file[:,5] -file[:,2]) +np.square(file[:,6] -file[:,3]))
+                    polyvec1x = file[:,4]-file[:,1]
+                    angle1 = np.degrees(
+                        np.arccos(np.clip(polyvec1x / polymag1, -1.0, 1.0)))
+
+                    comb_file.write("\n".join(map(str,polymag1)))
+                    comb_file.write("\n")
+                    comb_angle.write("\n".join(map(str, angle1)))
+                    comb_angle.write("\n")
+                comb_file.close()
+                comb_angle.close()
+
+    os.chdir("..")
+
+def histogram():
+    os.chdir(
+        "Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0], ldensity[-1], constant[0],
+                                                                              constant[-1],
+                                                                              chi[0], chi[-1], steps, time_step,
+                                                                              ar_ratio, noise))
+    for l in ldensity:
+        for x in chi:
+            for w in d_constant:
+                comb_file = np.loadtxt("Comb.ext_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps))
+                values, bins = np.histogram(comb_file, density=True, bins=config.bins)
+                centre = (bins[:-1] + bins[1:]) / 2
+
+                fig = plt.figure()
+                ax = fig.add_subplot(1, 1, 1)
+
+                ax.bar(centre, values, width=(centre[1] - centre[0]))
+                ax.set_title("Normalised Distribution of Extension for l{} w{}".format(l,w))
+                ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins),centre[1] - centre[0]))
+                ax.set_ylabel("Normalised Frequency")
+                fig.savefig("Dist.ext_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l,w,x,time_step,len(bins),steps))
+                plt.close(fig)
+                comb_angle = np.loadtxt("Comb.ang_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps))
+                angles , abins = np.histogram(comb_angle,density=True,bins = "auto")
+                acentre = (abins[:-1] + abins[1:]) / 2
+
+                fig2 = plt.figure()
+                ax2 = fig2.add_subplot(1, 1, 1)
+                ax2.bar(acentre, angles, width=(acentre[1] - acentre[0]))
+                ax2.set_title("Normalised Distribution of Angle with x-axis for l{} w{}".format(l, w))
+                ax2.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
+                ax2.set_ylabel("Normalised Frequency")
+                fig2.savefig(
+                    "Dist.ang_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l, w, x, time_step, len(bins), steps))
+                plt.close(fig2)
+    os.chdir("..")
 
 if __name__ == "__main__":
     """
@@ -464,6 +528,7 @@ if __name__ == "__main__":
     chi = config.chi
     ldensity = config.ldensity
     epsilon_squared = 4*ar_ratio*ar_ratio
+    d_constant = config.distr_constant
     # Lists that signify particle position in the Oseen tensor to make code more readable
     Part1 = range(0,3)
     Part2 = range(3,6)
@@ -491,8 +556,13 @@ if __name__ == "__main__":
 
     parser.add_argument("-p", "--plot", help="Plot configurations", action="store_true")
 
+    parser.add_argument("-d", "--distribution", help="Finds the distribution of angles and extension", action="store_true")
+
+    parser.add_argument("-hi", "--histogram", help="Plots histogram of angle and extension", action="store_true")
     args = parser.parse_args()
     # print args.echo
+
+
     if args.walk:
         simulate()
     if args.analyse:
@@ -505,3 +575,7 @@ if __name__ == "__main__":
         maximum()
     if args.plot:
         plot()
+    if args.distribution:
+        distribution()
+    if args.histogram:
+        histogram()
