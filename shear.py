@@ -520,9 +520,9 @@ def fileshistogram(data):
 
 
     fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    test = plt.figure()
-    lineax = test.add_subplot(1,1,1)
+    lineax = fig.add_subplot(1, 1, 1)
+    #test = plt.figure()
+    #lineax = test.add_subplot(1,1,1)
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(1, 1, 1)
     color = iter(plt.cm.rainbow(np.linspace(0, 1, len(ldata))))
@@ -534,22 +534,22 @@ def fileshistogram(data):
 
 
         c = next(color)
-        ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = l)
-        lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8)
+        #ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = l)
+        lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8,markevery = config.ext_markevery)
         lineax.legend()
-        ax.legend()
+        #ax.legend()
         comb_angle = np.loadtxt(angdata[i])
         angles , abins = np.histogram(comb_angle,density=True,bins = 180)
         acentre = (abins[:-1] + abins[1:]) / 2
 
 
-        ax2.bar(acentre, angles,color =c, width=(acentre[1] - acentre[0]),alpha = 0.5, label = l)
+        ax2.plot(acentre, angles,color =c, label = l, marker = ".", ms = 8, markevery = config.ang_markevery)
         ax2.legend()
-    ax.set_title("Normalised Distribution of Extension for l{}".format(ldata))
-    ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
-    ax.set_ylabel("Normalised Frequency")
+    lineax.set_title("Normalised Distribution of Extension for l{}".format(ldata))
+    lineax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
+    lineax.set_ylabel("Normalised Frequency")
     fig.savefig("Dist.ext_l{}_bins{}.png".format(ldata, len(bins)))
-    test.savefig("test")
+
     plt.close(fig)
 
     ax2.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))

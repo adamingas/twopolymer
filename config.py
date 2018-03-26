@@ -36,3 +36,5 @@ else:
 #Distribution constants
 distr_constant = [1,5,10]
 bins = 30
+ext_markevery = 2
+ang_markevery = 2
