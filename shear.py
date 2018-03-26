@@ -535,7 +535,7 @@ def fileshistogram(data):
 
         c = next(color)
         #ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = l)
-        lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8,markevery = config.ext_markevery)
+        lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8,markevery = (config.ext_markevery))
         lineax.legend()
         #ax.legend()
         comb_angle = np.loadtxt(angdata[i])
