@@ -523,7 +523,7 @@ def fileshistogram(data):
     ax = fig.add_subplot(1, 1, 1)
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(1, 1, 1)
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(d_constant))))
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(ldata))))
     for i,l in enumerate(ldata):
 
         comb_file = np.loadtxt(extdata[i])
