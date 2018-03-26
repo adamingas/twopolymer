@@ -480,6 +480,7 @@ def histogram():
             ax = fig.add_subplot(1, 1, 1)
             fig2 = plt.figure()
             ax2 = fig2.add_subplot(1, 1, 1)
+            color = iter(plt.cm.rainbow(np.linspace(0, 1, len(d_constant))))
 
             for w in d_constant:
                 comb_file = np.loadtxt("Comb.ext_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps))
@@ -487,15 +488,15 @@ def histogram():
                 centre = (bins[:-1] + bins[1:]) / 2
 
 
-
-                ax.bar(centre, values, width=(centre[1] - centre[0]),alpha = 0.5 ,label = "Wi {}".format(w))
+                c = next(color)
+                ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = "Wi {}".format(w))
                 ax.legend()
                 comb_angle = np.loadtxt("Comb.ang_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps))
                 angles , abins = np.histogram(comb_angle,density=True,bins = 180)
                 acentre = (abins[:-1] + abins[1:]) / 2
 
 
-                ax2.bar(acentre, angles, width=(acentre[1] - acentre[0]),alpha = 0.5, label = "Wi {}".format(w))
+                ax2.bar(acentre, angles,color =c, width=(acentre[1] - acentre[0]),alpha = 0.5, label = "Wi {}".format(w))
                 ax2.legend()
             ax.set_title("Normalised Distribution of Extension for l{} w{}".format(l, w))
             ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
