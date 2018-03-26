@@ -476,33 +476,41 @@ def histogram():
                                                                               ar_ratio, noise))
     for l in ldensity:
         for x in chi:
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1)
+            fig2 = plt.figure()
+            ax2 = fig2.add_subplot(1, 1, 1)
+
             for w in d_constant:
                 comb_file = np.loadtxt("Comb.ext_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps))
                 values, bins = np.histogram(comb_file, density=True, bins=config.bins)
                 centre = (bins[:-1] + bins[1:]) / 2
 
-                fig = plt.figure()
-                ax = fig.add_subplot(1, 1, 1)
 
-                ax.bar(centre, values, width=(centre[1] - centre[0]))
-                ax.set_title("Normalised Distribution of Extension for l{} w{}".format(l,w))
-                ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins),centre[1] - centre[0]))
-                ax.set_ylabel("Normalised Frequency")
-                fig.savefig("Dist.ext_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l,w,x,time_step,len(bins),steps))
-                plt.close(fig)
+
+                ax.bar(centre, values, width=(centre[1] - centre[0]),alpha = 0.5 ,label = "Wi {}".format(w))
+                ax.legend()
                 comb_angle = np.loadtxt("Comb.ang_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps))
-                angles , abins = np.histogram(comb_angle,density=True,bins = "auto")
+                angles , abins = np.histogram(comb_angle,density=True,bins = 180)
                 acentre = (abins[:-1] + abins[1:]) / 2
 
-                fig2 = plt.figure()
-                ax2 = fig2.add_subplot(1, 1, 1)
-                ax2.bar(acentre, angles, width=(acentre[1] - acentre[0]))
-                ax2.set_title("Normalised Distribution of Angle with x-axis for l{} w{}".format(l, w))
-                ax2.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
-                ax2.set_ylabel("Normalised Frequency")
-                fig2.savefig(
-                    "Dist.ang_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l, w, x, time_step, len(bins), steps))
-                plt.close(fig2)
+
+                ax2.bar(acentre, angles, width=(acentre[1] - acentre[0]),alpha = 0.5, label = "Wi {}".format(w))
+                ax2.legend()
+            ax.set_title("Normalised Distribution of Extension for l{} w{}".format(l, w))
+            ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
+            ax.set_ylabel("Normalised Frequency")
+            fig.savefig("Dist.ext_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l, d_constant , x, time_step, len(bins), steps))
+
+            plt.close(fig)
+
+            ax2.set_title("Normalised Distribution of Angle with x-axis for l{} w{}".format(l, w))
+            ax2.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
+            ax2.set_ylabel("Normalised Frequency")
+            fig2.savefig(
+                "Dist.ang_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l, d_constant, x, time_step, len(bins), steps))
+
+            plt.close(fig2)
     os.chdir("..")
 
 if __name__ == "__main__":
