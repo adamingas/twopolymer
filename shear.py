@@ -590,14 +590,12 @@ def fileshistogram(data):
         thwidthfile.write("{} {}\n".format(l, thwidth1[0]))
 
 
-    lineax.set_title("Normalised Distribution of Extension for l{}".format(ldata))
     lineax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
     lineax.set_ylabel("Normalised Frequency")
     fig.savefig("Dist.ext_l{}_bins{}.png".format(ldata, len(bins)))
 
     plt.close(fig)
 
-    axth.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
     axth.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
     axth.set_ylabel("Normalised Frequency")
     figth.savefig(
@@ -605,7 +603,6 @@ def fileshistogram(data):
 
     plt.close(figth)
 
-    axph.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
     axph.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
     axph.set_ylabel("Normalised Frequency")
     figph.savefig(
