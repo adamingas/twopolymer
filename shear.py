@@ -137,8 +137,6 @@ def noise_producer(matrix,chi_element):
     # Creating the sigma matrix
     sigma_m = np.zeros((12,12))
     sigma_m[0,0] = math.sqrt(matrix[0,0])
-    print "Matrix"
-    print matrix
     for i in range(12):
         for j in range(i):
             sigma_m[i,j] = matrix[i,j]
@@ -148,8 +146,6 @@ def noise_producer(matrix,chi_element):
                 k += 1
 
             sigma_m[i,j] = sigma_m[i,j]/sigma_m[j,j]
-        print sigma_m
-        print "\n"
         sigma_m[i,i] = math.sqrt(matrix[i,i] - np.sum(sigma_m[i,0:i]**2))
 
 
