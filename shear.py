@@ -625,7 +625,7 @@ def FWHM(X,Y,bool):
     right_idx = np.where(d < 0)[-1]
     if bool == True:
         results.append(abs(X[left_idx[0]] - X[Y.argmax()]))
-    results.append(abs(X[right_idx[0]]- X[Y.argmax()])
+    results.append(abs(X[right_idx[0]]- X[Y.argmax()]))
 
     return results#return the difference (full width)
 
