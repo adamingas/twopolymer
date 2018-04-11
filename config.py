@@ -3,7 +3,7 @@ import math
 
 noise = "yes" #yes or no
 steps = 1000
-runs = 100
+runs = 10
 constant = [1,5,10] #np.linspace(0,10,21).tolist()
 ldensity = [100]
 time_step = 0.1

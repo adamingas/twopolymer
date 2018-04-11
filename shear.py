@@ -101,7 +101,7 @@ def function(ref, refpair, p3, p4, sepvec, sepvec2, particles, oseen_tensor, k):
     magvec = np.linalg.norm(sepvec)**2
     magvec2 = np.linalg.norm(sepvec2)**2
 
-    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) + (
+    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) + ar_ratio*(
         -oseen_tensor[refpair*3:(refpair+1)*3, ref*3:(ref+1)*3].dot(sepvec)/(1-magvec)) + (oseen_tensor[3*p3:3*(p3+1), ref*3:(ref+1)*3].dot(sepvec2)
         - oseen_tensor[3*p4:3*(p4+1), ref*3:(ref+1)*3].dot(sepvec2))/(1-magvec2)
 
@@ -122,7 +122,7 @@ def oseen(particles):
             smagn = np.linalg.norm(svec)**2
             sep_lst.append(svec)
             # The units might not be correct
-            oseen_tensor[i*3:(i+1)*3,j*3:(j+1)*3] = (3*ar_ratio/8)*(np.identity(3)*(smagn + 2*epsilon_squared)+ (np.outer(svec,svec)))/(smagn +epsilon_squared)**(1.5)
+            oseen_tensor[i*3:(i+1)*3,j*3:(j+1)*3] = (3/8)*(np.identity(3)*(smagn + 2*epsilon_squared)+ (np.outer(svec,svec)))/(smagn +epsilon_squared)**(1.5)
 
     # Filling in the diagonal elements of the oseen tensor and returning the symmetric matrix
 
@@ -137,6 +137,8 @@ def noise_producer(matrix,chi_element):
     # Creating the sigma matrix
     sigma_m = np.zeros((12,12))
     sigma_m[0,0] = math.sqrt(matrix[0,0])
+    print "Matrix"
+    print matrix
     for i in range(12):
         for j in range(i):
             sigma_m[i,j] = matrix[i,j]
@@ -146,6 +148,8 @@ def noise_producer(matrix,chi_element):
                 k += 1
 
             sigma_m[i,j] = sigma_m[i,j]/sigma_m[j,j]
+        print sigma_m
+        print "\n"
         sigma_m[i,i] = math.sqrt(matrix[i,i] - np.sum(sigma_m[i,0:i]**2))
 
 
@@ -441,7 +445,7 @@ def update_progress(progress):
     text = "\rPercent: [{0}] {1}% {2}".format("#" * block + "-" * (barLength - block), progress * 100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
-def distribution():
+def distribution(polymag1=None):
     os.chdir("Shear_l:{}-{}_Wi:{}-{}_chi:{}-{}_steps:{}_ts:{}_ra{}_noise{}".format(ldensity[0],ldensity[-1],constant[0],constant[-1],
         chi[0],chi[-1],steps,time_step,ar_ratio,noise))
 
@@ -450,23 +454,34 @@ def distribution():
             for w in d_constant:
 
                 comb_file = open("Comb.ext_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps),"w")
-                comb_angle = open("Comb.ang_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps),"w")
-
+                comb_th = open("Comb.th_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps),"w")
+                comb_ph = open("Comb.ph_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps), "w")
                 for i in range(runs):
                     file = np.loadtxt("Run{}_Wi{}_chi{}_l{}".format(i, w, x, l))
                     polymag1 = np.sqrt(np.square(file[:,4] -file[:,1]) +np.square(file[:,5] -file[:,2]) +np.square(file[:,6] -file[:,3]))
+                    polymag1xy = np.sqrt(np.square(file[:,4] -file[:,1]) +np.square(file[:,5] -file[:,2]))
+                    polymag1xz = np.sqrt(np.square(file[:,4] -file[:,1]) + np.square(file[:,6] -file[:,3]))
                     polyvec1x = file[:,4]-file[:,1]
-                    angle1 = np.degrees(
-                        np.arccos(np.clip(polyvec1x / polymag1, -1.0, 1.0)))
+                    polymag1xz[0] = 0.00001
+                    # off plane angle theta calculation
+                    angleth = np.degrees(
+                        np.arccos(np.clip(polymag1xy / polymag1, -1.0, 1.0)))
+                    angleph = np.degrees(
+                        np.arccos(np.clip(polyvec1x / polymag1xy, -1.0, 1.0)))
 
                     comb_file.write("\n".join(map(str,polymag1)))
                     comb_file.write("\n")
-                    comb_angle.write("\n".join(map(str, angle1)))
-                    comb_angle.write("\n")
+                    comb_th.write("\n".join(map(str, angleth)))
+                    comb_th.write("\n")
+                    comb_ph.write("\n".join(map(str, angleph)))
+                    comb_ph.write("\n")
                 comb_file.close()
-                comb_angle.close()
+                comb_th.close()
+                comb_ph.close()
 
     os.chdir("..")
+
+
 
 def histogram():
     os.chdir(
@@ -474,57 +489,78 @@ def histogram():
                                                                               constant[-1],
                                                                               chi[0], chi[-1], steps, time_step,
                                                                               ar_ratio, noise))
+
     for l in ldensity:
         for x in chi:
-            fig = plt.figure()
-            ax = fig.add_subplot(1, 1, 1)
-            fig2 = plt.figure()
-            ax2 = fig2.add_subplot(1, 1, 1)
-            color = iter(plt.cm.rainbow(np.linspace(0, 1, len(d_constant))))
+            thwidthfile = open("Width_th_l:{}_W:{}-{}".format(l,d_constant[0],d_constant[-1]),"w")
+            phwidthfile = open("Width_ph_l:{}_W:{}-{}".format(l, d_constant[0], d_constant[-1]),"w")
 
             for w in d_constant:
+                thhistogram = open("Histogram_th_W:{}_l:{}".format(w,l),"w")
+                phhistogram = open("Histogram_ph_W:{}_l:{}".format(w, l),"w")
+                exthistogram = open("Histogram_ext_W:{}_l:{}".format(w,l),"w")
                 comb_file = np.loadtxt("Comb.ext_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps))
+                comb_th = np.loadtxt("Comb.th_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps))
+                comb_ph = np.loadtxt("Comb.ph_Wi{}_chi{}_l{}_ts{}_step{}".format(w, x, l, time_step, steps))
+
                 values, bins = np.histogram(comb_file, density=True, bins=config.bins)
-                centre = (bins[:-1] + bins[1:]) / 2
+                angles, abins = np.histogram(comb_th, density=True, bins=500)
+
+                phangles, phabins = np.histogram(comb_ph, density=True, bins=500)
+                np.savez(thhistogram,probability = angles, bins = abins)
+                np.savez(phhistogram,probability=phangles, bins = phabins)
+                np.savez(exthistogram,probability = values, bins=bins)
 
 
-                c = next(color)
-                ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = "Wi {}".format(w))
-                ax.legend()
-                comb_angle = np.loadtxt("Comb.ang_Wi{}_chi{}_l{}_ts{}_step{}".format(w,x,l,time_step,steps))
-                angles , abins = np.histogram(comb_angle,density=True,bins = 180)
-                acentre = (abins[:-1] + abins[1:]) / 2
+                # FWHM
+                thwidth1 = FWHM(abins, angles, False)
+                phwidth1 = FWHM(phabins, phangles, True)
+                phwidthfile.write("{} {}\n".format(w, min(phwidth1[0], phwidth1[1])))
+                thwidthfile.write("{} {}\n".format(w, thwidth1[0]))
 
-
-                ax2.bar(acentre, angles,color =c, width=(acentre[1] - acentre[0]),alpha = 0.5, label = "Wi {}".format(w))
-                ax2.legend()
-            ax.set_title("Normalised Distribution of Extension for l{} w{}".format(l, w))
-            ax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
-            ax.set_ylabel("Normalised Frequency")
-            fig.savefig("Dist.ext_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l, d_constant , x, time_step, len(bins), steps))
-
-            plt.close(fig)
-
-            ax2.set_title("Normalised Distribution of Angle with x-axis for l{} w{}".format(l, w))
-            ax2.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
-            ax2.set_ylabel("Normalised Frequency")
-            fig2.savefig(
-                "Dist.ang_l{}_Wi{}_chi{}_ts{}_bins{}_steps{}.png".format(l, d_constant, x, time_step, len(bins), steps))
-
-            plt.close(fig2)
     os.chdir("..")
+def histoplot(data):
+    files = data[0]
+    ldata = data[1]
+    title = data[2][0]
+    fig = plt.figure()
+    lineax = fig.add_subplot(1, 1, 1)
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, len(ldata))))
+    for i,l in enumerate(ldata):
+        npfiles = np.load(files[i])
+        values = npfiles["probability"]
+        bins = npfiles["bins"]
+        centre = (bins[:-1] + bins[1:]) / 2
+
+
+        c = next(color)
+        #ax.bar(centre, values, color=c,width=(centre[1] - centre[0]),alpha = 0.5 ,label = l)
+        lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8,markevery = (config.ext_markevery))
+        lineax.legend()
+
+    lineax.set_ylabel("Normalised Frequency")
+    fig.savefig("{}.png".format(title))
+
+    plt.close(fig)
 def fileshistogram(data):
     extdata = data[0]
-    angdata = data[1]
-    ldata = data[2]
+    thdata = data[1]
+    phdata = data[2]
+    ldata = data[3]
 
+    thwidthfile = open("Width of th:{}".format(ldata),"w")
+    phwidthfile = open("Width of ph:{}".format(ldata),"w")
+    thwidthfile.write("Name Right-Width Left-Width \n")
+    phwidthfile.write("Name Right-Width Left-Width \n")
 
     fig = plt.figure()
     lineax = fig.add_subplot(1, 1, 1)
     #test = plt.figure()
     #lineax = test.add_subplot(1,1,1)
-    fig2 = plt.figure()
-    ax2 = fig2.add_subplot(1, 1, 1)
+    figth = plt.figure()
+    axth = figth.add_subplot(1, 1, 1)
+    figph = plt.figure()
+    axph = figph.add_subplot(1, 1, 1)
     color = iter(plt.cm.rainbow(np.linspace(0, 1, len(ldata))))
     for i,l in enumerate(ldata):
 
@@ -538,13 +574,26 @@ def fileshistogram(data):
         lineax.plot(centre, values, color=c,label = l, marker = ".", ms = 8,markevery = (config.ext_markevery))
         lineax.legend()
         #ax.legend()
-        comb_angle = np.loadtxt(angdata[i])
-        angles , abins = np.histogram(comb_angle,density=True,bins = 180)
+
+        comb_th = np.loadtxt(thdata[i])
+        angles , abins = np.histogram(comb_th,density=True,bins = 500)
         acentre = (abins[:-1] + abins[1:]) / 2
+        axth.plot(acentre, angles,color =c, label = l, marker = ".", ms = 8, markevery = config.ang_markevery)
+        axth.legend()
+
+        comb_ph = np.loadtxt(phdata[i])
+        phangles, phabins = np.histogram(comb_ph, density=True, bins=500)
+        phacentre = (phabins[:-1] + phabins[1:]) / 2
+        axph.plot(phacentre, phangles, color=c, label=l, marker=".", ms=8, markevery=config.ang_markevery)
+        axph.legend()
+
+        #FWHM
+        thwidth1 = FWHM(abins, angles, False)
+        phwidth1 = FWHM(phabins, phangles, True)
+        phwidthfile.write("{} {}\n".format(l, min(phwidth1[0], phwidth1[1])))
+        thwidthfile.write("{} {}\n".format(l, thwidth1[0]))
 
 
-        ax2.plot(acentre, angles,color =c, label = l, marker = ".", ms = 8, markevery = config.ang_markevery)
-        ax2.legend()
     lineax.set_title("Normalised Distribution of Extension for l{}".format(ldata))
     lineax.set_xlabel("Extension split in {} bins of width {}".format(len(bins), centre[1] - centre[0]))
     lineax.set_ylabel("Normalised Frequency")
@@ -552,14 +601,37 @@ def fileshistogram(data):
 
     plt.close(fig)
 
-    ax2.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
-    ax2.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
-    ax2.set_ylabel("Normalised Frequency")
-    fig2.savefig(
-        "Dist.ang_l{}.png".format(ldata))
+    axth.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
+    axth.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
+    axth.set_ylabel("Normalised Frequency")
+    figth.savefig(
+        "Dist.th_l{}.png".format(ldata))
 
-    plt.close(fig2)
+    plt.close(figth)
 
+    axph.set_title("Normalised Distribution of Angle with x-axis for l{}".format(ldata))
+    axph.set_xlabel("Angle split in {} bins of width {}".format(len(abins), acentre[1] - acentre[0]))
+    axph.set_ylabel("Normalised Frequency")
+    figph.savefig(
+        "Dist.ph_l{}.png".format(ldata))
+
+    plt.close(figph)
+
+def FWHM(X,Y,bool):
+    half_max = np.max(Y) / 2.
+    results = []
+    #find when function crosses line half_max (when sign of diff flips)
+    #take the 'derivative' of signum(half_max - Y[])
+    d = np.sign(half_max - Y[0:-1]) - np.sign(half_max - Y[1:])
+    #plot(X,d) #if you are interested
+    #find the left and right most indexes
+    left_idx = np.where(d > 0)[0]
+    right_idx = np.where(d < 0)[-1]
+    if bool == True:
+        results.append(X[left_idx[0]] - X[Y.argmax()])
+    results.append(X[right_idx[0]]- X[Y.argmax()])
+
+    return results#return the difference (full width)
 
 
 if __name__ == "__main__":
@@ -617,7 +689,11 @@ if __name__ == "__main__":
 
     parser.add_argument("-hi", "--histogram", help="Plots histogram of angle and extension", action="store_true")
 
-    parser.add_argument("-f",'--files', nargs='+',help = "Takes file names as input. This file names are used to draw histograms")
+    parser.add_argument("-fhi",'--filehistogram', help = "Takes file names as input. These file names are used to draw histograms", action="store_true")
+
+    parser.add_argument("-fp",'--filehistoplot', help = "Takes file names as input. These file names are used to draw histograms\n."
+                                                        " Last element is file name of distrbution.\n"
+                                                        " Pass list of numpy files using -app", action="store_true")
 
     parser.add_argument("-app",'--append',nargs = "+", action='append')
     args = parser.parse_args()
@@ -641,5 +717,7 @@ if __name__ == "__main__":
         distribution()
     if args.histogram:
         histogram()
-    if args.append:
+    if args.filehistogram:
         fileshistogram(args.append)
+    if args.filehistoplot:
+        histoplot(args.append)
