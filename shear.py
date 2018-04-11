@@ -101,7 +101,7 @@ def function(ref, refpair, p3, p4, sepvec, sepvec2, particles, oseen_tensor, k):
     magvec = np.linalg.norm(sepvec)**2
     magvec2 = np.linalg.norm(sepvec2)**2
 
-    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) + ar_ratio*(
+    hydro_forces = ((sepvec) / (2 * (1 - np.linalg.norm(sepvec) ** 2))) + (
         -oseen_tensor[refpair*3:(refpair+1)*3, ref*3:(ref+1)*3].dot(sepvec)/(1-magvec)) + (oseen_tensor[3*p3:3*(p3+1), ref*3:(ref+1)*3].dot(sepvec2)
         - oseen_tensor[3*p4:3*(p4+1), ref*3:(ref+1)*3].dot(sepvec2))/(1-magvec2)
 
@@ -122,7 +122,7 @@ def oseen(particles):
             smagn = np.linalg.norm(svec)**2
             sep_lst.append(svec)
             # The units might not be correct
-            oseen_tensor[i*3:(i+1)*3,j*3:(j+1)*3] = (3/8)*(np.identity(3)*(smagn + 2*epsilon_squared)+ (np.outer(svec,svec)))/(smagn +epsilon_squared)**(1.5)
+            oseen_tensor[i*3:(i+1)*3,j*3:(j+1)*3] = (3*ar_ratio/8)*(np.identity(3)*(smagn + 2*epsilon_squared)+ (np.outer(svec,svec)))/(smagn +epsilon_squared)**(1.5)
 
     # Filling in the diagonal elements of the oseen tensor and returning the symmetric matrix
 
