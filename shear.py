@@ -509,7 +509,9 @@ def histogram():
 
 
                 # FWHM
+                print ("th {}".format(w))
                 thwidth1 = FWHM(abins, angles, False)
+                print ("ph {}".format(w))
                 phwidth1 = FWHM(phabins, phangles, True)
                 phwidthfile.write("{} {}\n".format(w, min(phwidth1[0], phwidth1[1])))
                 thwidthfile.write("{} {}\n".format(w, thwidth1[0]))
@@ -610,7 +612,7 @@ def fileshistogram(data):
 
     plt.close(figph)
 
-def FWHM(X,Y,bool):
+def FWHM(X,Y,boo):
     half_max = np.max(Y) / 2.
     results = []
     #find when function crosses line half_max (when sign of diff flips)
@@ -620,7 +622,9 @@ def FWHM(X,Y,bool):
     #find the left and right most indexes
     left_idx = np.where(d > 0)[0]
     right_idx = np.where(d < 0)[-1]
-    if bool == True:
+    print left_idx
+    print right_idx
+    if boo == True:
         results.append(abs(X[left_idx[0]] - X[Y.argmax()]))
     results.append(abs(X[right_idx[0]]- X[Y.argmax()]))
 
