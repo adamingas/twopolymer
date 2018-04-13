@@ -478,6 +478,15 @@ def distribution(polymag1=None):
     os.chdir("..")
 
 
+def histogramfromterminal(data):
+    files = data[0]
+    ldata = data[1]
+    bins = data[2][0]
+    for i,l in enumerate(ldata):
+        histofile = np.loadtxt("{}".format(files[i]))
+        values, bins = np.histogram(histofile, density=True, bins=bins)
+        np.savez("{}".format(l), probability=values, bins=bins)
+
 
 def histogram():
     os.chdir(
@@ -691,6 +700,14 @@ if __name__ == "__main__":
     parser.add_argument("-fp",'--filehistoplot', help = "Takes file names as input. These file names are used to draw histograms\n."
                                                         " Last element is file name of distrbution.\n"
                                                         " Pass list of numpy files using -app", action="store_true")
+
+    parser.add_argument("-ha", '--histogramappend',
+                        help="Takes file names as input. These file names are used to create histograms\n."
+                             " Last element is bins.\n"
+                             " Pass list of compy files using -app"
+                             "1st list files"
+                             "2nd list numpy names"
+                             "3rd list bin ", action="store_true")
 
     parser.add_argument("-app",'--append',nargs = "+", action='append')
     args = parser.parse_args()
