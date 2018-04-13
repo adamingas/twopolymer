@@ -735,3 +735,5 @@ if __name__ == "__main__":
         fileshistogram(args.append)
     if args.filehistoplot:
         histoplot(args.append)
+    if args.histogramappend:
+        histogramfromterminal(args.append)
