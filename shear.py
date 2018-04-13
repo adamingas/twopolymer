@@ -484,7 +484,7 @@ def histogramfromterminal(data):
     bins = data[2][0]
     for i,l in enumerate(ldata):
         histofile = np.loadtxt("{}".format(files[i]))
-        values, bins = np.histogram(histofile, density=True, bins=bins)
+        values, bins = np.histogram(histofile, density=True, bins=int(bins))
         np.savez("{}".format(l), probability=values, bins=bins)
 
 
